@@ -493,10 +493,11 @@ img {
 }
 
 .hero-bottom-row {
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(320px, 620px) minmax(360px, 520px);
+  gap: clamp(22px, 4vw, 68px);
+  align-items: end;
   justify-content: space-between;
-  gap: 32px;
   margin-top: clamp(18px, 3.4svh, 40px);
 }
 
@@ -521,29 +522,47 @@ img {
   line-height: 0.8;
 }
 
-.hero-proof-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  max-width: 760px;
-  margin-top: clamp(16px, 2.6svh, 30px);
+.hero-action-deck {
+  display: grid;
+  gap: 12px;
+  justify-self: end;
+  width: min(520px, 100%);
+  padding: 12px;
+  border: 1px solid rgba(255, 252, 225, 0.12);
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 225, 0.08), rgba(255, 252, 225, 0.026)),
+    rgba(8, 8, 7, 0.72);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 252, 225, 0.08);
+  backdrop-filter: blur(18px);
+  will-change: transform, opacity;
 }
 
-.hero-proof-row span {
-  min-height: 42px;
-  padding: 10px 16px;
-  border: 1px solid rgba(255, 252, 225, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 252, 225, 0.055);
-  color: var(--muted);
-  font-size: 0.92rem;
-  font-weight: 760;
+.hero-method-capsule {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hero-method-capsule span {
+  min-height: 52px;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 252, 225, 0.1);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 252, 225, 0.78);
+  font-size: 0.88rem;
+  font-weight: 780;
+  line-height: 1.18;
+  will-change: transform, opacity;
 }
 
 .kinetic-spark {
   position: absolute;
-  top: clamp(108px, 14svh, 174px);
-  left: clamp(180px, 18vw, 360px);
+  top: clamp(118px, 15svh, 176px);
+  left: clamp(280px, 24vw, 480px);
   z-index: 1;
   width: clamp(82px, 8.8vw, 172px);
   height: auto;
@@ -607,6 +626,7 @@ img {
   flex-wrap: wrap;
   gap: 14px;
   margin-top: 34px;
+  justify-content: flex-end;
 }
 
 .hero-mega .hero-actions {
@@ -736,7 +756,7 @@ img {
   display: flex;
   gap: 12px;
   width: min(1320px, calc(100% - 12vw));
-  margin: 28px auto 0;
+  margin: clamp(0px, 1.5vw, 18px) auto 0;
   padding: 18px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1445,6 +1465,15 @@ label span {
     margin-left: 0;
   }
 
+  .hero-bottom-row {
+    grid-template-columns: 1fr;
+    justify-content: start;
+  }
+
+  .hero-action-deck {
+    justify-self: start;
+  }
+
   .hero-inner,
   .pain-panel,
   .method-strip,
@@ -1484,16 +1513,16 @@ label span {
   }
 
   .hero-mega-inner {
-    min-height: min(780px, calc(100svh - 150px));
+    min-height: min(700px, calc(100svh - 220px));
   }
 
   .hero-mega .hero-title {
-    font-size: clamp(7.6rem, min(15.8vw, 21svh), 21rem);
+    font-size: clamp(6.8rem, min(14.2vw, 18.8svh), 18rem);
     line-height: 0.9;
   }
 
   .hero-bottom-row {
-    margin-top: clamp(18px, 3svh, 32px);
+    margin-top: clamp(12px, 2svh, 24px);
   }
 
   .hero-mega .hero-actions {
@@ -1639,6 +1668,21 @@ label span {
     margin-top: 28px;
   }
 
+  .hero-action-deck {
+    width: 100%;
+    padding: 10px;
+    border-radius: 26px;
+  }
+
+  .hero-method-capsule {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-method-capsule span {
+    min-height: 42px;
+    padding: 10px 13px;
+  }
+
   .hero-brace-copy {
     max-width: 100%;
     font-size: 1.05rem;
@@ -1652,8 +1696,7 @@ label span {
   }
 
   .motion-orb-one {
-    right: 18px;
-    bottom: 96px;
+    display: none;
   }
 
   .motion-orb-two {
@@ -1674,6 +1717,11 @@ label span {
   .hero-actions {
     display: grid;
     grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .hero-actions > * {
+    width: 100%;
   }
 
   .hero-actions .secondary-action {

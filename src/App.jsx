@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const navItems = [
   { label: "Services", target: "services" },
@@ -370,20 +374,21 @@ function KineticHero({ onStart }) {
             Learn what AI can do, then build one tool your team actually uses.
             <span>{`}`}</span>
           </p>
-          <div className="hero-actions">
-            <button className="acid-pill" type="button" onClick={onStart}>
-              Tell us what you need
-            </button>
-            <button className="ghost-pill secondary-action" type="button" onClick={() => scrollToSection("services")}>
-              See what we can build
-            </button>
+          <div className="hero-action-deck">
+            <div className="hero-actions">
+              <button className="acid-pill" type="button" onClick={onStart}>
+                Tell us what you need
+              </button>
+              <button className="ghost-pill secondary-action" type="button" onClick={() => scrollToSection("services")}>
+                See what we can build
+              </button>
+            </div>
+            <div className="hero-method-capsule" aria-label="Synqora method preview">
+              <span>Learn the team</span>
+              <span>Choose one task</span>
+              <span>Ship a usable tool</span>
+            </div>
           </div>
-        </div>
-
-        <div className="hero-proof-row" aria-label="Synqora method preview">
-          <span>Teach the team</span>
-          <span>Build the first tool</span>
-          <span>Leave it usable</span>
         </div>
       </div>
     </section>
@@ -724,51 +729,61 @@ export function App() {
     window.addEventListener("pageshow", handleLandingRestore);
     window.addEventListener("load", handleLandingRestore);
 
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (prefersReduced.matches || !rootRef.current) {
-      return () => {
-        window.removeEventListener("hashchange", handleHashChange);
-        window.removeEventListener("pageshow", handleLandingRestore);
-        window.removeEventListener("load", handleLandingRestore);
-      };
-    }
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("pageshow", handleLandingRestore);
+      window.removeEventListener("load", handleLandingRestore);
+    };
+  }, []);
 
-    const ctx = gsap.context(() => {
-      gsap.set(".hero-word", { yPercent: 115, rotate: 2 });
-      gsap.to(".hero-word", {
-        yPercent: 0,
-        rotate: 0,
-        duration: 1,
-        stagger: 0.08,
-        ease: "power4.out",
+  useGSAP(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
+    const q = gsap.utils.selector(root);
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const heroWords = q(".hero-word");
+      const heroKicker = q(".hero-kicker");
+      const heroBrace = q(".hero-brace-copy");
+      const heroDeck = q(".hero-action-deck");
+      const heroMethodItems = q(".hero-method-capsule span");
+      const revealBlocks = q(".reveal-block");
+      const revealChildren = q(".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief");
+      const footerChars = q(".footer-split-char");
+
+      gsap.set(heroWords, { yPercent: 115, rotate: 2, transformOrigin: "0 100%" });
+      gsap.set([heroKicker, heroBrace, heroDeck], { y: 24, autoAlpha: 0 });
+      gsap.set(heroMethodItems, { y: 14, autoAlpha: 0 });
+      gsap.set(revealBlocks, { y: 44, autoAlpha: 0 });
+      gsap.set(revealChildren, { y: 30, autoAlpha: 0 });
+      gsap.set(footerChars, { yPercent: 100, autoAlpha: 0 });
+
+      const heroTl = gsap.timeline({
+        defaults: { duration: 0.82, ease: "power4.out" },
       });
 
-      gsap.from(".hero-actions > *, .hero-proof-row span", {
-        y: 28,
-        opacity: 0,
-        duration: 0.8,
-        delay: 0.25,
-        stagger: 0.12,
-        ease: "power3.out",
-      });
+      heroTl.addLabel("intro", 0);
+      heroTl
+        .to(heroKicker, { y: 0, autoAlpha: 1, duration: 0.48 }, "intro")
+        .to(heroWords, { yPercent: 0, rotate: 0, stagger: 0.075 }, "intro+=0.08")
+        .from(".kinetic-spark", {
+          scale: 0.35,
+          rotate: -48,
+          autoAlpha: 0,
+          duration: 1.05,
+          ease: "elastic.out(1, 0.7)",
+        }, "intro+=0.16");
 
-      gsap.from(".hero-brace-copy", {
-        y: 24,
-        opacity: 0,
-        duration: 0.85,
-        delay: 0.42,
-        stagger: 0.08,
-        ease: "power3.out",
-      });
+      heroTl.addLabel("copy", "-=0.36");
+      heroTl.to(heroBrace, { y: 0, autoAlpha: 1, duration: 0.72, ease: "power3.out" }, "copy");
 
-      gsap.from(".kinetic-spark", {
-        scale: 0.35,
-        rotate: -48,
-        opacity: 0,
-        duration: 1.15,
-        delay: 0.18,
-        ease: "elastic.out(1, 0.7)",
-      });
+      heroTl.addLabel("actions", "copy+=0.08");
+      heroTl.to(heroDeck, { y: 0, autoAlpha: 1, duration: 0.72, ease: "power3.out" }, "actions");
+
+      heroTl.addLabel("proof", "actions+=0.12");
+      heroTl.to(heroMethodItems, { y: 0, autoAlpha: 1, stagger: 0.075, duration: 0.48 }, "proof");
 
       gsap.to(".kinetic-spark", {
         y: -14,
@@ -805,62 +820,71 @@ export function App() {
         ease: "none",
       });
 
-      gsap.from(".footer-split-char", {
-        yPercent: 100,
-        opacity: 0,
+      gsap.to(".hero-ambient-image", {
+        yPercent: -8,
+        scale: 1.04,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".kinetic-hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1,
+        },
+      });
+
+      ScrollTrigger.batch(revealBlocks, {
+        start: "top 82%",
+        once: true,
+        onEnter: (batch) => {
+          gsap.to(batch, {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.82,
+            stagger: 0.08,
+            ease: "power3.out",
+            overwrite: true,
+          });
+        },
+      });
+
+      ScrollTrigger.batch(revealChildren, {
+        start: "top 88%",
+        once: true,
+        onEnter: (batch) => {
+          gsap.to(batch, {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.68,
+            stagger: { each: 0.045, from: "start" },
+            ease: "power3.out",
+            overwrite: true,
+          });
+        },
+      });
+
+      gsap.to(footerChars, {
+        yPercent: 0,
+        autoAlpha: 1,
         duration: 0.72,
         stagger: 0.012,
         ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".split-footer",
+          start: "top 84%",
+          once: true,
+        },
       });
-    }, rootRef);
 
-    const revealBlocks = gsap.utils.toArray(".reveal-block", rootRef.current);
-    gsap.set(revealBlocks, { y: 42, opacity: 0 });
+      const refreshOnLoad = () => ScrollTrigger.refresh();
+      window.addEventListener("load", refreshOnLoad, { once: true });
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          gsap.to(entry.target, {
-            y: 0,
-            opacity: 1,
-            duration: 0.85,
-            ease: "power3.out",
-          });
+      return () => {
+        window.removeEventListener("load", refreshOnLoad);
+      };
+    });
 
-          const animatedChildren = entry.target.querySelectorAll(
-            ".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief",
-          );
-          if (animatedChildren.length) {
-            gsap.fromTo(
-              animatedChildren,
-              { y: 28, opacity: 0 },
-              {
-                y: 0,
-                opacity: 1,
-                duration: 0.72,
-                stagger: 0.055,
-                ease: "power3.out",
-              },
-            );
-          }
-
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
-    );
-
-    revealBlocks.forEach((block) => observer.observe(block));
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("hashchange", handleHashChange);
-      window.removeEventListener("pageshow", handleLandingRestore);
-      window.removeEventListener("load", handleLandingRestore);
-      ctx.revert();
-    };
-  }, []);
+    return () => mm.revert();
+  }, { scope: rootRef });
 
   function handleBriefSubmit(event) {
     event.preventDefault();
