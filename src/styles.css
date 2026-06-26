@@ -571,6 +571,91 @@ img {
   pointer-events: none;
 }
 
+.hero-morph-mark {
+  position: absolute;
+  top: clamp(170px, 24svh, 290px);
+  right: clamp(54px, 8vw, 170px);
+  z-index: 1;
+  width: clamp(150px, 14vw, 250px);
+  padding: 13px;
+  border: 1px solid rgba(255, 252, 225, 0.12);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(12, 255, 98, 0.2), transparent 38%),
+    linear-gradient(145deg, rgba(255, 252, 225, 0.085), rgba(255, 252, 225, 0.025)),
+    rgba(8, 8, 7, 0.54);
+  box-shadow:
+    0 26px 90px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 252, 225, 0.1);
+  pointer-events: none;
+  backdrop-filter: blur(18px);
+  will-change: transform, opacity;
+}
+
+.hero-morph-mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.hero-morph-targets {
+  visibility: hidden;
+}
+
+.hero-morph-shape {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.hero-morph-ring {
+  fill: none;
+  stroke: rgba(255, 252, 225, 0.26);
+  stroke-dasharray: 9 12;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.hero-morph-node {
+  fill: var(--acid);
+  filter: drop-shadow(0 0 12px rgba(12, 255, 98, 0.75));
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.hero-morph-node-two {
+  fill: var(--cyan);
+  filter: drop-shadow(0 0 12px rgba(56, 223, 247, 0.7));
+}
+
+.hero-morph-node-three {
+  fill: var(--violet);
+  filter: drop-shadow(0 0 14px rgba(125, 76, 255, 0.68));
+}
+
+.hero-morph-label {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.hero-morph-label span {
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 252, 225, 0.1);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.24);
+  color: rgba(255, 252, 225, 0.78);
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  will-change: transform, opacity;
+}
+
 .motion-orb {
   position: absolute;
   z-index: 1;
@@ -1932,6 +2017,19 @@ label span {
     width: 74px;
   }
 
+  .hero-morph-mark {
+    top: 186px;
+    right: 20px;
+    width: 94px;
+    padding: 7px;
+    border-radius: 22px;
+    opacity: 0.82;
+  }
+
+  .hero-morph-label {
+    display: none;
+  }
+
   .motion-orb-one {
     display: none;
   }
@@ -2158,6 +2256,9 @@ label span {
   }
 
   .hero-word,
+  .hero-morph-mark,
+  .hero-morph-shape,
+  .hero-morph-node,
   .shape-orbit,
   .footer-split-char,
   .reveal-block {

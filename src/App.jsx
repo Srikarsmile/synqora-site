@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
+import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger, Observer, MotionPathPlugin);
+gsap.registerPlugin(useGSAP, ScrollTrigger, Observer, MotionPathPlugin, MorphSVGPlugin);
 
 const navItems = [
   { label: "Services", target: "services" },
@@ -341,6 +342,67 @@ function KineticSpark() {
   );
 }
 
+function MorphingHeroMark() {
+  return (
+    <div className="hero-morph-mark" aria-hidden="true">
+      <svg viewBox="0 0 240 240" focusable="false">
+        <defs>
+          <linearGradient id="morphGradient" x1="36" x2="204" y1="32" y2="208" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#0cff62" />
+            <stop offset="0.48" stopColor="#38dff7" />
+            <stop offset="1" stopColor="#7d4cff" />
+          </linearGradient>
+          <filter id="morphGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="7" result="blur" />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="0 0 0 0 0.05 0 0 0 0 1 0 0 0 0 0.38 0 0 0 0.72 0"
+              result="glow"
+            />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g className="hero-morph-targets">
+          <path
+            className="hero-morph-target hero-morph-target-learn"
+            d="M120 18 C138 76 164 102 222 120 C164 138 138 164 120 222 C102 164 76 138 18 120 C76 102 102 76 120 18Z"
+          />
+          <path
+            className="hero-morph-target hero-morph-target-build"
+            d="M62 38 C90 20 150 20 178 38 C204 56 220 88 220 120 C220 152 204 184 178 202 C150 220 90 220 62 202 C36 184 20 152 20 120 C20 88 36 56 62 38Z"
+          />
+          <path
+            className="hero-morph-target hero-morph-target-use"
+            d="M120 24 C160 24 172 70 206 84 C236 96 228 150 196 164 C164 178 162 218 120 218 C78 218 76 178 44 164 C12 150 4 96 34 84 C68 70 80 24 120 24Z"
+          />
+        </g>
+        <path
+          className="hero-morph-shape"
+          d="M120 18 C138 76 164 102 222 120 C164 138 138 164 120 222 C102 164 76 138 18 120 C76 102 102 76 120 18Z"
+          fill="url(#morphGradient)"
+          filter="url(#morphGlow)"
+        />
+        <path
+          className="hero-morph-ring"
+          d="M42 120 C42 68 68 42 120 42 C172 42 198 68 198 120 C198 172 172 198 120 198 C68 198 42 172 42 120Z"
+        />
+        <circle className="hero-morph-node hero-morph-node-one" cx="53" cy="92" r="6" />
+        <circle className="hero-morph-node hero-morph-node-two" cx="180" cy="76" r="5" />
+        <circle className="hero-morph-node hero-morph-node-three" cx="188" cy="162" r="7" />
+      </svg>
+      <div className="hero-morph-label">
+        <span>Learn</span>
+        <span>Build</span>
+        <span>Use</span>
+      </div>
+    </div>
+  );
+}
+
 function KineticHero({ onStart }) {
   return (
     <section className="kinetic-hero hero-mega" aria-labelledby="hero-title">
@@ -355,6 +417,7 @@ function KineticHero({ onStart }) {
       <span className="motion-orb motion-orb-two" aria-hidden="true" />
       <span className="motion-orb motion-orb-three" aria-hidden="true" />
       <KineticSpark />
+      <MorphingHeroMark />
       <div className="hero-mega-inner">
         <p className="section-kicker hero-kicker">AI help for non-technical teams</p>
         <h1 id="hero-title" className="hero-title" aria-label="Make AI feel useful.">
@@ -866,6 +929,12 @@ export function App() {
       const heroBrace = q(".hero-brace-copy");
       const heroDeck = q(".hero-action-deck");
       const heroMethodItems = q(".hero-method-capsule span");
+      const heroMorphMark = q(".hero-morph-mark");
+      const heroMorphShape = q(".hero-morph-shape");
+      const heroMorphTargets = q(".hero-morph-target");
+      const heroMorphLabel = q(".hero-morph-label span");
+      const heroMorphNodes = q(".hero-morph-node");
+      const shapeOrbits = q(".shape-orbit");
       const revealBlocks = q(".reveal-block");
       const revealChildren = q(".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief");
       const footerChars = q(".footer-split-char");
@@ -874,6 +943,8 @@ export function App() {
       gsap.set(heroWords, { yPercent: 115, rotate: 2, transformOrigin: "0 100%" });
       gsap.set([heroKicker, heroBrace, heroDeck], { y: 24, autoAlpha: 0 });
       gsap.set(heroMethodItems, { y: 14, autoAlpha: 0 });
+      gsap.set(heroMorphMark, { scale: 0.78, rotate: -8, autoAlpha: 0, transformOrigin: "50% 50%" });
+      gsap.set(heroMorphLabel, { y: 10, autoAlpha: 0 });
       gsap.set(revealBlocks, { y: 44, autoAlpha: 0 });
       gsap.set(revealChildren, { y: 30, autoAlpha: 0 });
       gsap.set(footerChars, { yPercent: 100, autoAlpha: 0 });
@@ -893,6 +964,21 @@ export function App() {
           duration: 1.05,
           ease: "elastic.out(1, 0.7)",
         }, "intro+=0.16");
+      heroTl
+        .to(heroMorphMark, {
+          scale: 1,
+          rotate: 0,
+          autoAlpha: 1,
+          duration: 0.9,
+          ease: "back.out(1.45)",
+        }, "intro+=0.24")
+        .to(heroMorphLabel, {
+          y: 0,
+          autoAlpha: 1,
+          stagger: 0.08,
+          duration: 0.44,
+          ease: "power3.out",
+        }, "intro+=0.46");
 
       heroTl.addLabel("copy", "-=0.36");
       heroTl.to(heroBrace, { y: 0, autoAlpha: 1, duration: 0.72, ease: "power3.out" }, "copy");
@@ -912,6 +998,41 @@ export function App() {
         ease: "sine.inOut",
       });
 
+      if (heroMorphShape.length > 0 && heroMorphTargets.length >= 3) {
+        const morphTl = gsap.timeline({
+          repeat: -1,
+          defaults: { duration: 1.08, ease: "power3.inOut" },
+        });
+
+        morphTl
+          .to(heroMorphShape, {
+            morphSVG: { shape: heroMorphTargets[1], type: "rotational", shapeIndex: 2 },
+            rotate: 7,
+            svgOrigin: "120 120",
+          }, "+=0.52")
+          .to(heroMorphShape, {
+            morphSVG: { shape: heroMorphTargets[2], type: "rotational", shapeIndex: 4 },
+            rotate: -6,
+            svgOrigin: "120 120",
+          }, "+=0.52")
+          .to(heroMorphShape, {
+            morphSVG: { shape: heroMorphTargets[0], type: "rotational", shapeIndex: 0 },
+            rotate: 0,
+            svgOrigin: "120 120",
+          }, "+=0.52");
+      }
+
+      gsap.to(heroMorphNodes, {
+        scale: 1.5,
+        autoAlpha: 0.38,
+        duration: 1.6,
+        repeat: -1,
+        yoyo: true,
+        stagger: 0.22,
+        ease: "sine.inOut",
+        transformOrigin: "50% 50%",
+      });
+
       gsap.to(".motion-orb", {
         y: (index) => [-20, 18, -12][index] ?? -16,
         x: (index) => [12, -18, 10][index] ?? 8,
@@ -923,13 +1044,15 @@ export function App() {
         stagger: 0.18,
       });
 
-      gsap.to(".shape-orbit", {
-        rotate: 360,
-        duration: 22,
-        repeat: -1,
-        ease: "none",
-        transformOrigin: "50% 50%",
-      });
+      if (shapeOrbits.length > 0) {
+        gsap.to(shapeOrbits, {
+          rotate: 360,
+          duration: 22,
+          repeat: -1,
+          ease: "none",
+          transformOrigin: "50% 50%",
+        });
+      }
 
       gsap.to(".section-marquee span", {
         xPercent: -32,
