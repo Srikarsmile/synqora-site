@@ -35,6 +35,8 @@ const checks = [
   ["acid pill buttons", css.includes(".acid-pill") && css.includes(".ghost-pill")],
   ["shape animation CSS", css.includes(".animated-shape") && css.includes(".shape-orbit")],
   ["simplified service cards", css.includes(".pain-point-chooser") && css.includes(".problem-card") && css.includes(".problem-card::before")],
+  ["aligned section headings", css.includes(".section-heading {") && css.includes("max-width: 920px") && !css.includes("grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.5fr)")],
+  ["roomier offer cards", css.includes("grid-template-columns: repeat(3, minmax(0, 1fr))") && !css.includes("grid-template-columns: repeat(5, minmax(0, 1fr))")],
   ["method strip CSS", css.includes(".method-strip") && css.includes(".method-step")],
   ["proof cards CSS", css.includes(".example-card") && css.includes(".before-after")],
   ["contact CSS", css.includes(".contact-brief") && css.includes(".brief-form")],
