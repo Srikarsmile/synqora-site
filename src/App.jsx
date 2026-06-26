@@ -3,10 +3,9 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
-import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger, Observer, MotionPathPlugin, MorphSVGPlugin);
+gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin, MorphSVGPlugin);
 
 const navItems = [
   { label: "Services", target: "services" },
@@ -523,90 +522,6 @@ function PainPointChooser({ activeId, onSelect }) {
   );
 }
 
-function SwipeStoryDeck({ activeIndex, onSelect, onNext, onPrev }) {
-  const active = painPoints[activeIndex] ?? painPoints[0];
-  const progress = `${((activeIndex + 1) / painPoints.length) * 100}%`;
-
-  return (
-    <section className="site-section reveal-block story-section" aria-labelledby="story-title">
-      <div className="section-heading">
-        <p className="section-kicker">Observer style interaction</p>
-        <h2 id="story-title">Swipe or scroll through common AI fixes.</h2>
-        <p>
-          Move through the everyday problems Synqora can turn into training, automation,
-          or a simple tool your team can understand.
-        </p>
-      </div>
-
-      <div
-        className="story-slider"
-        tabIndex="0"
-        aria-label="Swipe through Synqora AI fixes"
-      >
-        <div className="story-progress" aria-hidden="true">
-          <span className="story-progress-fill" style={{ width: progress }} />
-        </div>
-
-        <div className="story-stage" aria-live="polite">
-          {painPoints.map((item, index) => (
-            <article
-              className={index === activeIndex ? "story-slide is-active" : "story-slide"}
-              key={item.id}
-              aria-hidden={index !== activeIndex}
-            >
-              <div className="story-card">
-                <div className="story-media">
-                  <img src={item.visual} alt={`${item.title} example`} />
-                </div>
-                <div className="story-copy">
-                  <p className="section-kicker">{item.category}</p>
-                  <h3>{item.title}</h3>
-                  <dl>
-                    <div>
-                      <dt>Starts with</dt>
-                      <dd>{item.problem}</dd>
-                    </div>
-                    <div>
-                      <dt>Synqora turns it into</dt>
-                      <dd>{item.build}</dd>
-                    </div>
-                  </dl>
-                  <p className="story-result">{item.result}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div className="story-controls">
-          <button type="button" className="ghost-pill" onClick={onPrev} aria-label="Previous AI fix">
-            Prev
-          </button>
-          <div className="story-dots" aria-label="Choose AI fix">
-            {painPoints.map((item, index) => (
-              <button
-                className={index === activeIndex ? "is-active" : ""}
-                key={item.id}
-                type="button"
-                onClick={() => onSelect(index)}
-                aria-label={`Show ${item.title}`}
-                aria-current={index === activeIndex ? "true" : undefined}
-              />
-            ))}
-          </div>
-          <button type="button" className="acid-pill" onClick={onNext} aria-label="Next AI fix">
-            Next
-          </button>
-        </div>
-
-        <p className="story-hint">
-          Use wheel, swipe, arrow buttons, or dots. Current: {active.title}.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 function ProblemOutcomeCard({ item }) {
   return (
     <article className="problem-card">
@@ -890,7 +805,6 @@ export function App() {
   const rootRef = useRef(null);
   const gsapScaleHero = true;
   const [activeId, setActiveId] = useState("reply");
-  const [storyIndex, setStoryIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
   const [briefStatus, setBriefStatus] = useState("New request");
@@ -938,7 +852,6 @@ export function App() {
       const revealBlocks = q(".reveal-block");
       const revealChildren = q(".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief");
       const footerChars = q(".footer-split-char");
-      const storySlider = q(".story-slider")[0];
 
       gsap.set(heroWords, { yPercent: 115, rotate: 2, transformOrigin: "0 100%" });
       gsap.set([heroKicker, heroBrace, heroDeck], { y: 24, autoAlpha: 0 });
@@ -1136,41 +1049,6 @@ export function App() {
         },
       });
 
-      let lastStoryChange = 0;
-      const moveStory = (direction) => {
-        const now = performance.now();
-        if (now - lastStoryChange < 620) return;
-        lastStoryChange = now;
-        setStoryIndex((current) => (current + direction + painPoints.length) % painPoints.length);
-      };
-
-      const storyObserver = storySlider
-        ? Observer.create({
-            target: storySlider,
-            type: "wheel,touch,pointer",
-            tolerance: 18,
-            preventDefault: false,
-            onWheel: (self) => {
-              if (Math.abs(self.deltaY) > 18) {
-                moveStory(self.deltaY > 0 ? 1 : -1);
-              }
-            },
-            onChangeY: (self) => {
-              if (Math.abs(self.deltaY) > 18) {
-                moveStory(self.deltaY > 0 ? 1 : -1);
-              }
-            },
-            onLeft: () => moveStory(1),
-            onRight: () => moveStory(-1),
-          })
-        : null;
-      const handleStoryWheel = (event) => {
-        if (Math.abs(event.deltaY) > 24) {
-          moveStory(event.deltaY > 0 ? 1 : -1);
-        }
-      };
-      storySlider?.addEventListener("wheel", handleStoryWheel, { passive: true });
-
       gsap.to(footerChars, {
         yPercent: 0,
         autoAlpha: 1,
@@ -1188,34 +1066,12 @@ export function App() {
       window.addEventListener("load", refreshOnLoad, { once: true });
 
       return () => {
-        storyObserver?.kill();
-        storySlider?.removeEventListener("wheel", handleStoryWheel);
         window.removeEventListener("load", refreshOnLoad);
       };
     });
 
     return () => mm.revert();
   }, { scope: rootRef });
-
-  useGSAP(() => {
-    const root = rootRef.current;
-    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const q = gsap.utils.selector(root);
-    const activeSlide = q(".story-slide.is-active");
-    const activePieces = q(".story-slide.is-active .story-media, .story-slide.is-active .story-copy > *");
-
-    gsap.fromTo(
-      activeSlide,
-      { x: 34, scale: 0.98, autoAlpha: 0 },
-      { x: 0, scale: 1, autoAlpha: 1, duration: 0.58, ease: "power3.out" },
-    );
-    gsap.fromTo(
-      activePieces,
-      { y: 16, autoAlpha: 0 },
-      { y: 0, autoAlpha: 1, duration: 0.5, stagger: 0.045, ease: "power3.out" },
-    );
-  }, { dependencies: [storyIndex], scope: rootRef });
 
   function handleBriefSubmit(event) {
     event.preventDefault();
@@ -1229,10 +1085,6 @@ export function App() {
       textarea.value = choice;
       textarea.focus();
     }
-  }
-
-  function goToStory(direction) {
-    setStoryIndex((current) => (current + direction + painPoints.length) % painPoints.length);
   }
 
   return (
@@ -1304,12 +1156,6 @@ export function App() {
           <span>Simple AI websites</span>
           <span>Useful team workflows</span>
         </section>
-        <SwipeStoryDeck
-          activeIndex={storyIndex}
-          onSelect={setStoryIndex}
-          onNext={() => goToStory(1)}
-          onPrev={() => goToStory(-1)}
-        />
         <PainPointChooser activeId={activeId} onSelect={setActiveId} />
         <ProblemOutcomeSection />
         <MethodStrip />
