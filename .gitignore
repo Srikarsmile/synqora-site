@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.npm-cache/
+.superpowers/
+qa/
+
+.DS_Store
+*.log
+
+.env
+.env.*
+!.env.example
+
+.npmrc

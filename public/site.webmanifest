@@ -1,0 +1,17 @@
+{
+  "name": "Synqora AI",
+  "short_name": "Synqora",
+  "description": "Learn AI. Build AI. Deploy AI.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
