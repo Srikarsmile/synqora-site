@@ -192,14 +192,28 @@ img {
   right: 0;
   left: 0;
   z-index: 40;
+  min-height: 92px;
+  padding: 14px 6vw 18px;
+  background: linear-gradient(180deg, rgba(8, 8, 7, 0.94), rgba(8, 8, 7, 0.62) 70%, transparent);
+  pointer-events: none;
+}
+
+.site-header-shell {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 76px;
-  padding: 16px 6vw;
-  border-bottom: 1px solid rgba(255, 252, 225, 0.11);
-  background: rgba(8, 8, 7, 0.72);
-  backdrop-filter: blur(18px);
+  width: min(1760px, 100%);
+  min-height: 66px;
+  margin: 0 auto;
+  padding: 8px 8px 8px 20px;
+  border: 1px solid rgba(255, 252, 225, 0.13);
+  border-radius: 999px;
+  background: rgba(8, 8, 7, 0.86);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 252, 225, 0.06);
+  backdrop-filter: blur(22px);
+  pointer-events: auto;
 }
 
 .brand-button {
@@ -217,9 +231,25 @@ img {
 }
 
 .desktop-nav {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(255, 252, 225, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 252, 225, 0.035);
+}
+
+.desktop-nav::before {
+  position: absolute;
+  inset: 4px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(12, 255, 98, 0.12), rgba(56, 223, 247, 0.05), transparent 72%);
+  opacity: 0.62;
+  content: "";
 }
 
 .shell-button,
@@ -256,6 +286,42 @@ img {
   padding: 0 20px;
 }
 
+.shell-button.nav-link {
+  position: relative;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 252, 225, 0.68);
+  font-weight: 720;
+}
+
+.shell-button.nav-link::after {
+  position: absolute;
+  right: 18px;
+  bottom: 7px;
+  left: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--acid);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: center;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+  content: "";
+}
+
+.shell-button.nav-link:hover {
+  background: rgba(255, 252, 225, 0.07);
+}
+
+.shell-button.nav-link:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
 .shell-button:hover,
 .ghost-pill:hover,
 .mobile-menu-button:hover,
@@ -283,7 +349,13 @@ img {
 
 .nav-cta {
   min-height: 42px;
+  gap: 9px;
   padding-inline: 22px;
+}
+
+.nav-cta span {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .mobile-menu-button,
@@ -708,6 +780,10 @@ img {
   scroll-margin-top: 96px;
 }
 
+#method {
+  padding-top: 76px;
+}
+
 .section-heading {
   display: block;
   max-width: 920px;
@@ -962,9 +1038,9 @@ label span {
 
 .method-strip {
   display: grid;
-  grid-template-columns: minmax(340px, 0.42fr) minmax(0, 1fr);
-  gap: 28px;
-  padding: 28px;
+  grid-template-columns: 1fr;
+  gap: clamp(26px, 4vw, 48px);
+  padding: clamp(24px, 4vw, 50px);
   border: 1px solid var(--line);
   border-radius: 36px;
   background:
@@ -973,10 +1049,23 @@ label span {
 }
 
 .method-intro {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 26px;
+  display: block;
+  max-width: 1040px;
+}
+
+.method-intro .section-kicker {
+  margin-bottom: 18px;
+}
+
+.method-intro h2 {
+  max-width: 980px;
+  font-size: clamp(3.5rem, 5vw, 6.5rem);
+  line-height: 0.94;
+}
+
+.method-intro > p:not(.section-kicker) {
+  max-width: 640px;
+  margin: 22px 0 0;
 }
 
 .method-steps {
@@ -988,10 +1077,10 @@ label span {
 .method-step {
   position: relative;
   display: flex;
-  min-height: 270px;
+  min-height: 224px;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 22px;
+  justify-content: space-between;
+  gap: 18px;
   padding: 22px;
   border: 1px solid rgba(255, 252, 225, 0.12);
   border-radius: 24px;
@@ -1009,11 +1098,17 @@ label span {
 }
 
 .method-step p {
-  margin: 0;
+  margin: 12px 0 0;
   color: var(--muted);
 }
 
-.method-step span {
+.method-step-index {
+  color: var(--acid);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.method-output {
   margin-top: auto;
   color: var(--acid);
   font-weight: 820;
@@ -1357,6 +1452,17 @@ label span {
     grid-template-columns: 1fr;
   }
 
+  .method-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .method-intro .section-kicker,
+  .method-intro h2,
+  .method-intro > p:not(.section-kicker) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
   .problem-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1411,7 +1517,7 @@ label span {
 
   .mobile-menu {
     position: fixed;
-    top: 78px;
+    top: 88px;
     right: 6vw;
     left: 6vw;
     z-index: 45;
@@ -1457,8 +1563,14 @@ label span {
   }
 
   .site-header {
-    min-height: 68px;
-    padding: 12px 20px;
+    min-height: 76px;
+    padding: 10px 20px 0;
+  }
+
+  .site-header-shell {
+    min-height: 58px;
+    padding: 6px 8px 6px 14px;
+    border-radius: 24px;
   }
 
   .brand-button {

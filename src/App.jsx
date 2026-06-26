@@ -486,11 +486,14 @@ function MethodStrip() {
           </p>
         </div>
         <div className="method-steps">
-          {methodSteps.map((step) => (
+          {methodSteps.map((step, index) => (
             <article className="method-step" key={step.title}>
-              <h3>{step.title}</h3>
-              <p>{step.text}</p>
-              <span>{step.output}</span>
+              <span className="method-step-index">{String(index + 1).padStart(2, "0")}</span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </div>
+              <span className="method-output">{step.output}</span>
             </article>
           ))}
         </div>
@@ -859,30 +862,33 @@ export function App() {
     <div className="app-shell" ref={rootRef}>
       <CursorFollower />
       <header className="site-header">
-        <button className="brand-button" type="button" onClick={scrollToTop} aria-label="Synqora home">
-          <img src="/assets/brand/synqora-gradient-wordmark.svg" alt="Synqora" />
-        </button>
-
-        <nav className="desktop-nav" aria-label="Main navigation">
-          {navItems.map((item) => (
-            <AppShellButton key={item.target} onClick={() => scrollToSection(item.target)}>
-              {item.label}
-            </AppShellButton>
-          ))}
-          <button className="acid-pill nav-cta" type="button" onClick={() => scrollToSection("contact")}>
-            Start
+        <div className="site-header-shell">
+          <button className="brand-button" type="button" onClick={scrollToTop} aria-label="Synqora home">
+            <img src="/assets/brand/synqora-gradient-wordmark.svg" alt="Synqora" />
           </button>
-        </nav>
 
-        <button
-          className="mobile-menu-button"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          Menu
-        </button>
+          <nav className="desktop-nav" aria-label="Main navigation">
+            {navItems.map((item) => (
+              <AppShellButton className="nav-link" key={item.target} onClick={() => scrollToSection(item.target)}>
+                {item.label}
+              </AppShellButton>
+            ))}
+            <button className="acid-pill nav-cta" type="button" onClick={() => scrollToSection("contact")}>
+              Start
+              <span aria-hidden="true">-&gt;</span>
+            </button>
+          </nav>
+
+          <button
+            className="mobile-menu-button"
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            Menu
+          </button>
+        </div>
       </header>
 
       {menuOpen ? (
