@@ -193,6 +193,7 @@ function CursorFollower() {
   const rafRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
   const currentRef = useRef({ x: 0, y: 0 });
+  const cursorTrailHistoryRef = useRef([]);
   const trailsRef = useRef(
     Array.from({ length: 4 }, () => ({ x: 0, y: 0 })),
   );
@@ -214,10 +215,26 @@ function CursorFollower() {
       current.y += (target.y - current.y) * 0.34;
       follower.style.transform = `translate3d(${current.x - 5}px, ${current.y - 4}px, 0)`;
 
+      const history = cursorTrailHistoryRef.current;
+      history.unshift({ x: current.x, y: current.y });
+      if (history.length > 42) {
+        history.length = 42;
+      }
+
       trailsRef.current.forEach((trail, index) => {
-        const source = index === 0 ? current : trailsRef.current[index - 1];
-        trail.x += (source.x - trail.x) * (0.2 - index * 0.025);
-        trail.y += (source.y - trail.y) * (0.2 - index * 0.025);
+        const cursorTrailLag = 5 + index * 6;
+        const cursorTrailBackOffset = 14 + index * 7;
+        const historyPoint = history[Math.min(cursorTrailLag, history.length - 1)] ?? current;
+        const previousPoint = history[Math.min(cursorTrailLag + 2, history.length - 1)] ?? historyPoint;
+        const velocityX = historyPoint.x - previousPoint.x;
+        const velocityY = historyPoint.y - previousPoint.y;
+        const distance = Math.hypot(velocityX, velocityY) || 1;
+        const source = {
+          x: historyPoint.x - (velocityX / distance) * cursorTrailBackOffset,
+          y: historyPoint.y - (velocityY / distance) * cursorTrailBackOffset,
+        };
+        trail.x += (source.x - trail.x) * (0.24 - index * 0.025);
+        trail.y += (source.y - trail.y) * (0.24 - index * 0.025);
         const dot = dotRefs.current[index];
         if (dot) {
           dot.style.transform = `translate3d(${trail.x - 5}px, ${trail.y - 5}px, 0)`;
@@ -231,6 +248,7 @@ function CursorFollower() {
       pointerRef.current = { x: event.clientX, y: event.clientY };
       if (!hasMovedRef.current) {
         currentRef.current = { ...pointerRef.current };
+        cursorTrailHistoryRef.current = Array.from({ length: 42 }, () => ({ ...pointerRef.current }));
         trailsRef.current = trailsRef.current.map(() => ({ ...pointerRef.current }));
         hasMovedRef.current = true;
       }
