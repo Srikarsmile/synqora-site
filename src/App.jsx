@@ -301,25 +301,56 @@ function AnimatedShape({ tone = "green", label = "AI workflow motion" }) {
   );
 }
 
+function KineticSpark() {
+  return (
+    <svg className="kinetic-spark" viewBox="0 0 180 180" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="sparkGradient" x1="18" x2="154" y1="20" y2="154" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#0cff62" />
+          <stop offset="0.48" stopColor="#38dff7" />
+          <stop offset="1" stopColor="#ff7ad9" />
+        </linearGradient>
+      </defs>
+      <path d="M84 8c22 34 34 46 84 42-34 22-46 34-42 84-22-34-34-46-84-42 34-22 46-34 42-84Z" fill="url(#sparkGradient)" />
+      <path d="M63 47c18 18 32 24 60 18-18 18-24 32-18 60-18-18-32-24-60-18 18-18 24-32 18-60Z" fill="rgba(255,252,225,0.28)" />
+    </svg>
+  );
+}
+
 function KineticHero({ onStart }) {
   return (
-    <section className="kinetic-hero" aria-labelledby="hero-title">
+    <section className="kinetic-hero hero-mega" aria-labelledby="hero-title">
       <div className="hero-background-grid" aria-hidden="true" />
-      <div className="hero-inner">
-        <div className="hero-copy">
-          <p className="section-kicker hero-kicker">AI help for non-technical teams</p>
-          <h1 id="hero-title" className="hero-title" aria-label="Make AI feel useful.">
-            <span className="hero-line">
-              <span className="hero-word">Make</span>
-              <span className="hero-word">AI</span>
-            </span>
-            <span className="hero-line">
-              <span className="hero-word">feel</span>
-              <span className="hero-word">useful.</span>
-            </span>
-          </h1>
-          <p className="hero-support">
+      <img
+        className="hero-ambient-image"
+        src="/assets/nano/synqora-hero-nano.webp"
+        alt=""
+        aria-hidden="true"
+      />
+      <span className="motion-orb motion-orb-one" aria-hidden="true" />
+      <span className="motion-orb motion-orb-two" aria-hidden="true" />
+      <span className="motion-orb motion-orb-three" aria-hidden="true" />
+      <KineticSpark />
+      <div className="hero-mega-inner">
+        <p className="section-kicker hero-kicker">AI help for non-technical teams</p>
+        <h1 id="hero-title" className="hero-title" aria-label="Make AI feel useful.">
+          <span className="hero-line">
+            <span className="hero-word" data-motion-word="Make">Make</span>
+            <span className="hero-word" data-motion-word="AI">AI</span>
+          </span>
+          <span className="hero-line hero-line-offset hero-line-middle">
+            <span className="hero-word" data-motion-word="feel">feel</span>
+          </span>
+          <span className="hero-line hero-line-offset hero-line-final">
+            <span className="hero-word" data-motion-word="useful">useful.</span>
+          </span>
+        </h1>
+
+        <div className="hero-bottom-row">
+          <p className="hero-brace-copy">
+            <span>{`{`}</span>
             Learn what AI can do, then build one tool your team actually uses.
+            <span>{`}`}</span>
           </p>
           <div className="hero-actions">
             <button className="acid-pill" type="button" onClick={onStart}>
@@ -331,20 +362,10 @@ function KineticHero({ onStart }) {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Synqora AI workbench preview">
-          <AnimatedShape tone="green" />
-          <AnimatedShape tone="violet" />
-          <div className="hero-image-wrap">
-            <img
-              src="/assets/nano/synqora-hero-nano.webp"
-              alt="Abstract AI workbench with connected cards and assistant panels"
-            />
-          </div>
-          <div className="hero-brace">
-            <span>Teach the team</span>
-            <span>Build the first tool</span>
-            <span>Leave it usable</span>
-          </div>
+        <div className="hero-proof-row" aria-label="Synqora method preview">
+          <span>Teach the team</span>
+          <span>Build the first tool</span>
+          <span>Leave it usable</span>
         </div>
       </div>
     </section>
@@ -365,12 +386,12 @@ function PainPointChooser({ activeId, onSelect }) {
         </p>
       </div>
 
-      <div className="pain-point-chooser">
+      <div className="pain-point-chooser service-rail">
         <div className="pain-tabs" role="tablist" aria-label="Choose a Synqora goal">
           {painPoints.map((item) => (
             <button
               key={item.id}
-              className={item.id === active.id ? "pain-tab is-active" : "pain-tab"}
+              className={item.id === active.id ? "pain-tab service-rail-card is-active" : "pain-tab service-rail-card"}
               type="button"
               role="tab"
               aria-selected={item.id === active.id}
@@ -436,6 +457,9 @@ function ProblemOutcomeCard({ item }) {
 function ProblemOutcomeSection() {
   return (
     <section className="site-section reveal-block" aria-labelledby="problem-title">
+      <div className="section-marquee" aria-hidden="true">
+        <span>Useful AI. Plain English. One real workflow. Useful AI. Plain English.</span>
+      </div>
       <div className="section-heading compact">
         <p className="section-kicker">Simple offers</p>
         <h2 id="problem-title">AI work explained by the problem it solves.</h2>
@@ -659,6 +683,7 @@ function SplitFooter() {
 
 export function App() {
   const rootRef = useRef(null);
+  const gsapScaleHero = true;
   const [activeId, setActiveId] = useState("reply");
   const [menuOpen, setMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
@@ -697,7 +722,7 @@ export function App() {
         ease: "power4.out",
       });
 
-      gsap.from(".hero-support, .hero-actions, .hero-brace", {
+      gsap.from(".hero-actions > *, .hero-proof-row span", {
         y: 28,
         opacity: 0,
         duration: 0.8,
@@ -706,12 +731,57 @@ export function App() {
         ease: "power3.out",
       });
 
+      gsap.from(".hero-brace-copy", {
+        y: 24,
+        opacity: 0,
+        duration: 0.85,
+        delay: 0.42,
+        stagger: 0.08,
+        ease: "power3.out",
+      });
+
+      gsap.from(".kinetic-spark", {
+        scale: 0.35,
+        rotate: -48,
+        opacity: 0,
+        duration: 1.15,
+        delay: 0.18,
+        ease: "elastic.out(1, 0.7)",
+      });
+
+      gsap.to(".kinetic-spark", {
+        y: -14,
+        rotate: 10,
+        duration: 4.6,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+
+      gsap.to(".motion-orb", {
+        y: (index) => [-20, 18, -12][index] ?? -16,
+        x: (index) => [12, -18, 10][index] ?? 8,
+        scale: (index) => [1.12, 0.92, 1.08][index] ?? 1,
+        duration: (index) => [5.5, 6.2, 4.8][index] ?? 5,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        stagger: 0.18,
+      });
+
       gsap.to(".shape-orbit", {
         rotate: 360,
         duration: 22,
         repeat: -1,
         ease: "none",
         transformOrigin: "50% 50%",
+      });
+
+      gsap.to(".section-marquee span", {
+        xPercent: -32,
+        duration: 18,
+        repeat: -1,
+        ease: "none",
       });
 
       gsap.from(".footer-split-char", {
@@ -736,6 +806,24 @@ export function App() {
             duration: 0.85,
             ease: "power3.out",
           });
+
+          const animatedChildren = entry.target.querySelectorAll(
+            ".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief",
+          );
+          if (animatedChildren.length) {
+            gsap.fromTo(
+              animatedChildren,
+              { y: 28, opacity: 0 },
+              {
+                y: 0,
+                opacity: 1,
+                duration: 0.72,
+                stagger: 0.055,
+                ease: "power3.out",
+              },
+            );
+          }
+
           observer.unobserve(entry.target);
         });
       },
@@ -824,7 +912,7 @@ export function App() {
       ) : null}
 
       <main>
-        <KineticHero onStart={() => scrollToSection("contact")} />
+        {gsapScaleHero ? <KineticHero onStart={() => scrollToSection("contact")} /> : null}
         <section className="ticker" aria-label="Synqora focus areas">
           <span>Beginner AI training</span>
           <span>Company knowledge helpers</span>
