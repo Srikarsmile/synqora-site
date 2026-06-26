@@ -169,8 +169,10 @@ function resetLandingScroll() {
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }
 
-  scrollToTop();
-  setTimeout(scrollToTop, 50);
+  const resetTimers = [0, 50, 250, 700, 1200];
+  resetTimers.forEach((delay) => {
+    setTimeout(scrollToTop, delay);
+  });
 }
 
 function scrollToSection(target) {
@@ -629,11 +631,18 @@ export function App() {
     resetLandingScroll();
 
     const handleHashChange = () => resetLandingScroll();
+    const handleLandingRestore = () => resetLandingScroll();
     window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("pageshow", handleLandingRestore);
+    window.addEventListener("load", handleLandingRestore);
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (prefersReduced.matches || !rootRef.current) {
-      return () => window.removeEventListener("hashchange", handleHashChange);
+      return () => {
+        window.removeEventListener("hashchange", handleHashChange);
+        window.removeEventListener("pageshow", handleLandingRestore);
+        window.removeEventListener("load", handleLandingRestore);
+      };
     }
 
     const ctx = gsap.context(() => {
@@ -696,6 +705,8 @@ export function App() {
     return () => {
       observer.disconnect();
       window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("pageshow", handleLandingRestore);
+      window.removeEventListener("load", handleLandingRestore);
       ctx.revert();
     };
   }, []);
