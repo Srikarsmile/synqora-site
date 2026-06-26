@@ -27,7 +27,6 @@ const checks = [
   ["split footer", app.includes("function SplitFooter") && app.includes("footer-split-char")],
   ["green arrow cursor follower", app.includes("function CursorFollower") && app.includes("cursor-arrow") && app.includes("cursor-trail-dot") && app.includes("dotRefs") && app.includes("pointermove") && css.includes(".cursor-arrow") && css.includes(".cursor-trail-dot") && css.includes("cursor: none !important")],
   ["polished nav shell", app.includes("site-header-shell") && app.includes("nav-link") && css.includes(".site-header-shell") && css.includes(".desktop-nav::before") && css.includes(".nav-link")],
-  ["bold GSAP nav rail", app.includes("activeNav") && app.includes("aria-current") && app.includes("brand-rail") && app.includes("nav-rail") && css.includes(".brand-rail") && css.includes(".nav-rail") && css.includes(".nav-link.is-active") && css.includes(".nav-rail::after")],
   ["method section no tall column wall", app.includes("method-step-index") && app.includes("method-output") && css.includes(".method-step-index") && css.includes(".method-output") && css.includes("grid-template-columns: 1fr;")],
   ["non-technical copy", app.includes("non-technical") && app.includes("plain English")],
   ["local Synqora logo", app.includes("/assets/brand/synqora-gradient-wordmark.svg")],

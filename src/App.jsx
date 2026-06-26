@@ -688,7 +688,6 @@ export function App() {
   const rootRef = useRef(null);
   const gsapScaleHero = true;
   const [activeId, setActiveId] = useState("reply");
-  const [activeNav, setActiveNav] = useState("services");
   const [menuOpen, setMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
   const [briefStatus, setBriefStatus] = useState("New request");
@@ -845,31 +844,6 @@ export function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const sections = navItems.map((item) => document.getElementById(item.target)).filter(Boolean);
-    if (!sections.length) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntry = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (visibleEntry?.target.id) {
-          setActiveNav(visibleEntry.target.id);
-        }
-      },
-      {
-        rootMargin: "-28% 0px -52% 0px",
-        threshold: [0, 0.15, 0.35, 0.6],
-      },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-
-    return () => observer.disconnect();
-  }, []);
-
   function handleBriefSubmit(event) {
     event.preventDefault();
     setBriefStatus("Ready to send");
@@ -889,18 +863,13 @@ export function App() {
       <CursorFollower />
       <header className="site-header">
         <div className="site-header-shell">
-          <button className="brand-button brand-rail" type="button" onClick={scrollToTop} aria-label="Synqora home">
+          <button className="brand-button" type="button" onClick={scrollToTop} aria-label="Synqora home">
             <img src="/assets/brand/synqora-gradient-wordmark.svg" alt="Synqora" />
           </button>
 
-          <nav className="desktop-nav nav-rail" aria-label="Main navigation">
+          <nav className="desktop-nav" aria-label="Main navigation">
             {navItems.map((item) => (
-              <AppShellButton
-                className={activeNav === item.target ? "nav-link is-active" : "nav-link"}
-                key={item.target}
-                aria-current={activeNav === item.target ? "page" : undefined}
-                onClick={() => scrollToSection(item.target)}
-              >
+              <AppShellButton className="nav-link" key={item.target} onClick={() => scrollToSection(item.target)}>
                 {item.label}
               </AppShellButton>
             ))}
@@ -926,10 +895,8 @@ export function App() {
         <nav className="mobile-menu" id="mobile-menu" aria-label="Mobile navigation">
           {navItems.map((item) => (
             <button
-              className={activeNav === item.target ? "is-active" : undefined}
               key={item.target}
               type="button"
-              aria-current={activeNav === item.target ? "page" : undefined}
               onClick={() => {
                 setMenuOpen(false);
                 scrollToSection(item.target);
