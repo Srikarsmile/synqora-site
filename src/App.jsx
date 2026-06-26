@@ -189,9 +189,14 @@ function AppShellButton({ children, className = "", ...props }) {
 
 function CursorFollower() {
   const followerRef = useRef(null);
+  const dotRefs = useRef([]);
   const rafRef = useRef(0);
   const pointerRef = useRef({ x: 0, y: 0 });
   const currentRef = useRef({ x: 0, y: 0 });
+  const trailsRef = useRef(
+    Array.from({ length: 4 }, () => ({ x: 0, y: 0 })),
+  );
+  const hasMovedRef = useRef(false);
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -205,21 +210,39 @@ function CursorFollower() {
     function animate() {
       const current = currentRef.current;
       const target = pointerRef.current;
-      current.x += (target.x - current.x) * 0.18;
-      current.y += (target.y - current.y) * 0.18;
-      follower.style.transform = `translate3d(${current.x}px, ${current.y}px, 0)`;
+      current.x += (target.x - current.x) * 0.34;
+      current.y += (target.y - current.y) * 0.34;
+      follower.style.transform = `translate3d(${current.x - 5}px, ${current.y - 4}px, 0)`;
+
+      trailsRef.current.forEach((trail, index) => {
+        const source = index === 0 ? current : trailsRef.current[index - 1];
+        trail.x += (source.x - trail.x) * (0.2 - index * 0.025);
+        trail.y += (source.y - trail.y) * (0.2 - index * 0.025);
+        const dot = dotRefs.current[index];
+        if (dot) {
+          dot.style.transform = `translate3d(${trail.x - 5}px, ${trail.y - 5}px, 0)`;
+        }
+      });
+
       rafRef.current = requestAnimationFrame(animate);
     }
 
     function handlePointerMove(event) {
       pointerRef.current = { x: event.clientX, y: event.clientY };
+      if (!hasMovedRef.current) {
+        currentRef.current = { ...pointerRef.current };
+        trailsRef.current = trailsRef.current.map(() => ({ ...pointerRef.current }));
+        hasMovedRef.current = true;
+      }
       follower.classList.add("is-visible");
+      dotRefs.current.forEach((dot) => dot?.classList.add("is-visible"));
     }
 
     function handlePointerOver(event) {
       const target = event.target;
       if (target instanceof Element && target.closest("button, a, input, textarea, select, summary, .problem-card, .example-card")) {
         follower.classList.add("is-active");
+        dotRefs.current.forEach((dot) => dot?.classList.add("is-active"));
       }
     }
 
@@ -227,6 +250,7 @@ function CursorFollower() {
       const target = event.target;
       if (target instanceof Element && target.closest("button, a, input, textarea, select, summary, .problem-card, .example-card")) {
         follower.classList.remove("is-active");
+        dotRefs.current.forEach((dot) => dot?.classList.remove("is-active"));
       }
     }
 
@@ -243,7 +267,25 @@ function CursorFollower() {
     };
   }, []);
 
-  return <div className="cursor-follower" ref={followerRef} aria-hidden="true" />;
+  return (
+    <>
+      <div className="cursor-follower" ref={followerRef} aria-hidden="true">
+        <svg className="cursor-arrow" viewBox="0 0 38 38" focusable="false">
+          <path d="M5 4L31 18L19 21L15 34L5 4Z" />
+        </svg>
+      </div>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <span
+          className={`cursor-trail-dot cursor-trail-dot-${index + 1}`}
+          key={index}
+          ref={(node) => {
+            dotRefs.current[index] = node;
+          }}
+          aria-hidden="true"
+        />
+      ))}
+    </>
+  );
 }
 
 function AnimatedShape({ tone = "green", label = "AI workflow motion" }) {

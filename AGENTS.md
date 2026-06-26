@@ -6,4 +6,4 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 
-Durable design direction: the user selected the GSAP-inspired "Bold kinetic hero" direction for Synqora. Use near-black backgrounds, warm off-white oversized type, acid green accents, simple pill controls, deliberate GSAP motion, a subtle desktop-only cursor follower, and plain-English AI copy for non-technical teams. Avoid returning to dense dashboard/card-heavy layouts or heavy cursor trail effects.
+Durable design direction: the user selected the GSAP-inspired "Bold kinetic hero" direction for Synqora. Use near-black backgrounds, warm off-white oversized type, acid green accents, simple pill controls, deliberate GSAP motion, a desktop-only green arrow cursor with small trailing dots, and plain-English AI copy for non-technical teams. Avoid returning to dense dashboard/card-heavy layouts or heavy cursor effects.

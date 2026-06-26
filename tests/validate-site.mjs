@@ -23,7 +23,7 @@ const checks = [
   ["examples section", app.includes("function ExampleTransformations") && app.includes("Before") && app.includes("After")],
   ["contact brief", app.includes("function ContactBrief") && app.includes("What work takes too much time?")],
   ["split footer", app.includes("function SplitFooter") && app.includes("footer-split-char")],
-  ["polished cursor follower", app.includes("function CursorFollower") && app.includes("cursor-follower") && app.includes("pointermove") && css.includes(".cursor-follower") && css.includes(".cursor-follower.is-active")],
+  ["green arrow cursor follower", app.includes("function CursorFollower") && app.includes("cursor-arrow") && app.includes("cursor-trail-dot") && app.includes("dotRefs") && app.includes("pointermove") && css.includes(".cursor-arrow") && css.includes(".cursor-trail-dot") && css.includes("cursor: none !important")],
   ["non-technical copy", app.includes("non-technical") && app.includes("plain English")],
   ["local Synqora logo", app.includes("/assets/brand/synqora-gradient-wordmark.svg")],
   ["Nano image assets", app.includes("synqora-hero-nano.webp") && app.includes("synqora-training-nano.webp") && app.includes("synqora-rag-nano.webp") && app.includes("synqora-automation-nano.webp")],
