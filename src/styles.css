@@ -1079,6 +1079,53 @@ label span {
   }
 }
 
+@media (max-height: 980px) and (min-width: 900px) {
+  .kinetic-hero {
+    min-height: 100svh;
+    padding-top: 120px;
+    padding-bottom: 54px;
+  }
+
+  .hero-inner {
+    align-items: center;
+  }
+
+  .hero-title {
+    font-size: clamp(5.6rem, 13svh, 7.7rem);
+    line-height: 0.9;
+  }
+
+  .hero-support {
+    margin-top: 24px;
+    font-size: 1.24rem;
+  }
+
+  .hero-actions {
+    margin-top: 24px;
+  }
+
+  .hero-visual {
+    height: clamp(420px, 56svh, 520px);
+    min-height: 0;
+  }
+
+  .hero-image-wrap {
+    inset: 82px 20px 20px;
+  }
+
+  .hero-brace {
+    top: 20px;
+    right: 20px;
+    left: 20px;
+  }
+
+  .hero-brace span {
+    min-height: 50px;
+    padding: 12px;
+    font-size: 0.82rem;
+  }
+}
+
 @media (max-width: 900px) {
   .desktop-nav {
     display: none;

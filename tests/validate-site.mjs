@@ -33,6 +33,7 @@ const checks = [
   ["no service search catalog", !app.includes("serviceSearch") && !app.includes("Search services") && !css.includes(".service-search")],
   ["new color system", css.includes("#fffce1") && css.includes("#0cff62") && css.includes("--ink")],
   ["kinetic hero CSS", css.includes(".kinetic-hero") && css.includes(".hero-word") && css.includes(".hero-brace")],
+  ["height-aware hero fit", css.includes("@media (max-height: 980px) and (min-width: 900px)") && css.includes("font-size: clamp(5.6rem, 13svh, 7.7rem)") && css.includes("height: clamp(420px, 56svh, 520px)")],
   ["acid pill buttons", css.includes(".acid-pill") && css.includes(".ghost-pill")],
   ["hero ticker does not overlap", css.includes(".ticker") && !css.includes("margin: -34px auto 0")],
   ["shape animation CSS", css.includes(".animated-shape") && css.includes(".shape-orbit")],
