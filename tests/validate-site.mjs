@@ -14,6 +14,8 @@ const removedAssetPaths = [
 
 const requiredAppTokens = [
   "const textScreens",
+  "const serviceFocusItems",
+  "function ScreenCta",
   "function HeroShaderGradient",
   "function TextScreen",
   "function useElementVisibility",
@@ -32,6 +34,12 @@ const requiredAppTokens = [
   "uFrequency={5.5}",
   "uSpeed={0.4}",
   "uStrength={4}",
+  'href="#contact"',
+  'className="screen-cta"',
+  "We reply within 24 hours",
+  "Websites",
+  "AI tools",
+  "Automation",
 ];
 
 const requiredCssTokens = [
@@ -43,6 +51,9 @@ const requiredCssTokens = [
   ".screen-gradient-services",
   ".screen-copy",
   ".screen-title",
+  ".screen-cta",
+  ".service-focus-list",
+  ".mobile-optional-field",
   ".hero-shader-backdrop",
   ".hero-shader-canvas",
   "depth-gallery-drift",
@@ -71,6 +82,9 @@ const checks = [
   ["CSS keeps the required full-screen gradient structure", requiredCssTokens.every((token) => css.includes(token))],
   ["Old card/image surfaces removed", forbiddenTokens.every((token) => !app.includes(token) && !css.includes(token))],
   ["Contact form is the only restored form surface", app.includes("contact-form") && app.includes("function ContactForm")],
+  ["Hero has a visible sales CTA", app.includes('cta: "Start a build"') && app.includes('href="#contact"')],
+  ["Service screen names concrete offer lanes", app.includes("Websites") && app.includes("AI tools") && app.includes("Automation")],
+  ["Contact screen includes a response-time trust cue", app.includes("We reply within 24 hours")],
   [
     "Depth scroll uses an idle scheduler instead of a continuous render loop",
     app.includes("scheduleDepthFrame")

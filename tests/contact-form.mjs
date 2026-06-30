@@ -19,6 +19,8 @@ const staticFailures = [];
   "Internal tool",
   "Budget",
   "Timeline",
+  "We reply within 24 hours",
+  "contact-trust",
   "mailto:info@synqora.tech",
   "data-depth-stable",
   "backface-visibility: hidden",
@@ -66,6 +68,8 @@ const report = await page.evaluate(() => {
   const copyRect = copy?.getBoundingClientRect();
   const submitStyle = submit ? getComputedStyle(submit) : null;
   const firstFieldStyle = fields[0] ? getComputedStyle(fields[0]) : null;
+  const trust = document.querySelector("#contact .contact-trust");
+  const trustRect = trust?.getBoundingClientRect();
 
   return {
     action: form?.getAttribute("action") ?? "",
@@ -81,6 +85,8 @@ const report = await page.evaluate(() => {
     hasMessage: Boolean(document.querySelector("#contact textarea[name='message']")),
     method: form?.getAttribute("method") ?? "",
     submitText: submit?.textContent?.trim() ?? "",
+    trustText: trust?.textContent?.trim() ?? "",
+    trustVisible: Boolean(trustRect && trustRect.width > 40 && trustRect.height > 12),
     submitRadius: submitStyle?.borderRadius ?? "",
     stableDepth: contact?.getAttribute("data-depth-stable") ?? "",
     formBackface: form ? getComputedStyle(form).backfaceVisibility : "",
@@ -168,6 +174,9 @@ if (report.method.toLowerCase() !== "post") failures.push(`Contact form should u
 if (report.fieldCount < 6) failures.push(`Contact form should collect useful detail with 6 fields, got ${report.fieldCount}.`);
 if (!report.hasMessage) failures.push("Contact form should include a message textarea.");
 if (report.submitText !== "Send enquiry") failures.push(`Submit copy should be direct: ${report.submitText}.`);
+if (!report.trustText.includes("We reply within 24 hours") || !report.trustVisible) {
+  failures.push(`Contact form should show a response-time reassurance: ${JSON.stringify(report)}.`);
+}
 if (!isDarkText(report.firstFieldColor)) failures.push(`Contact form field text should be dark: ${report.firstFieldColor}.`);
 if (parseFloat(report.firstFieldRadius) < 14) failures.push(`Contact fields should have Apple-style rounded corners: ${report.firstFieldRadius}.`);
 if (parseFloat(report.submitRadius) < 18) failures.push(`Submit button should have a soft Apple-style radius: ${report.submitRadius}.`);

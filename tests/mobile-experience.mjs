@@ -57,6 +57,34 @@ for (const id of ["hero", "services", "method", "examples", "answers", "contact"
   }, id));
 }
 
+await page.locator("#hero").scrollIntoViewIfNeeded();
+await page.waitForTimeout(500);
+const heroReport = await page.evaluate(() => {
+  const cta = document.querySelector("#hero .screen-cta");
+  const ctaRect = cta?.getBoundingClientRect();
+
+  return {
+    ctaBottom: Math.round(ctaRect?.bottom ?? 0),
+    ctaHref: cta?.getAttribute("href") ?? "",
+    ctaText: cta?.textContent?.trim() ?? "",
+    ctaVisible: Boolean(ctaRect && ctaRect.width > 40 && ctaRect.height >= 38),
+    viewportHeight: window.innerHeight,
+  };
+});
+
+await page.locator("#services").scrollIntoViewIfNeeded();
+await page.waitForTimeout(500);
+const servicesReport = await page.evaluate(() => ({
+  items: [...document.querySelectorAll("#services .service-focus-item")].map((item) => {
+    const rect = item.getBoundingClientRect();
+
+    return {
+      text: item.textContent?.trim() ?? "",
+      visible: rect.width > 20 && rect.height > 20,
+    };
+  }),
+}));
+
 await page.locator("#contact").scrollIntoViewIfNeeded();
 await page.waitForTimeout(700);
 const contactReport = await page.evaluate(() => {
@@ -76,9 +104,18 @@ const contactReport = await page.evaluate(() => {
 
   return {
     form: rectOf("#contact .contact-form"),
+    hiddenOptionalCount: [...document.querySelectorAll("#contact .mobile-optional-field")]
+      .filter((element) => getComputedStyle(element).display === "none").length,
     screen: rectOf("#contact"),
     submit: rectOf("#contact .contact-submit"),
     title: rectOf("#contact .screen-title"),
+    trustCue: document.querySelector("#contact .contact-trust")?.textContent?.trim() ?? "",
+    visibleFieldCount: [...document.querySelectorAll("#contact input, #contact textarea, #contact select")]
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return style.display !== "none" && rect.width > 0 && rect.height > 0;
+      }).length,
     screenHeightCss: getComputedStyle(document.querySelector("#contact")).height,
     viewportHeight: window.innerHeight,
   };
@@ -130,6 +167,23 @@ const isWhiteBackground = (color) => {
 
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
 
+if (heroReport.ctaText !== "Start a build" || heroReport.ctaHref !== "#contact" || !heroReport.ctaVisible) {
+  failures.push(`Mobile hero needs a visible direct CTA to contact: ${JSON.stringify(heroReport)}.`);
+}
+if (heroReport.ctaBottom > heroReport.viewportHeight - 48) {
+  failures.push(`Mobile hero CTA should sit safely above browser controls: ${JSON.stringify(heroReport)}.`);
+}
+
+const serviceTexts = servicesReport.items.map((item) => item.text);
+["Websites", "AI tools", "Automation"].forEach((label) => {
+  if (!serviceTexts.includes(label)) {
+    failures.push(`Mobile services should expose concrete offer lane "${label}": ${JSON.stringify(servicesReport)}.`);
+  }
+});
+if (servicesReport.items.some((item) => !item.visible)) {
+  failures.push(`Mobile service lanes should be visibly scannable: ${JSON.stringify(servicesReport)}.`);
+}
+
 screenCoverage.forEach((screen) => {
   if (Math.abs(screen.height - screen.viewportHeight) > 2) {
     failures.push(`Mobile ${screen.id} should cover exactly one visible screen: ${JSON.stringify(screen)}.`);
@@ -153,6 +207,15 @@ if (!contactReport.submit || contactReport.submit.bottom > contactReport.viewpor
 }
 if (!contactReport.form || contactReport.form.width < 330) {
   failures.push(`Mobile contact form should keep a comfortable readable width: ${JSON.stringify(contactReport.form)}.`);
+}
+if (contactReport.visibleFieldCount > 3) {
+  failures.push(`Mobile contact form should reduce to the three highest-intent fields: ${JSON.stringify(contactReport)}.`);
+}
+if (contactReport.hiddenOptionalCount < 3) {
+  failures.push(`Mobile contact should hide optional budget/timeline/project fields: ${JSON.stringify(contactReport)}.`);
+}
+if (!contactReport.trustCue.includes("We reply within 24 hours")) {
+  failures.push(`Mobile contact should add a response-time trust cue: ${JSON.stringify(contactReport)}.`);
 }
 if (!contactReport.title || contactReport.title.height > 126) {
   failures.push(`Mobile contact title should not dominate the form screen: ${JSON.stringify(contactReport.title)}.`);
@@ -188,6 +251,9 @@ if (footerReport.title && (footerReport.title.height < 178 || footerReport.title
 if (footerReport.title && footerReport.email && footerReport.email.top - footerReport.title.bottom > 180) {
   failures.push(`Mobile footer has too much empty space between headline and email: ${JSON.stringify(footerReport)}.`);
 }
+if (footerReport.email && footerReport.crowd && footerReport.crowd.top - footerReport.email.bottom > 260) {
+  failures.push(`Mobile footer should connect the email and people band more tightly: ${JSON.stringify(footerReport)}.`);
+}
 if (!footerReport.crowd || footerReport.crowd.height > 205) {
   failures.push(`Mobile people band should not consume the lower third: ${JSON.stringify(footerReport.crowd)}.`);
 }
@@ -205,7 +271,7 @@ if (footerReport.pet && footerReport.crowd && footerReport.pet.bottom > footerRe
 }
 
 if (failures.length > 0) {
-  throw new Error(`Mobile experience failed:\n${failures.join("\n")}\n\n${JSON.stringify({ contactReport, footerReport }, null, 2)}`);
+  throw new Error(`Mobile experience failed:\n${failures.join("\n")}\n\n${JSON.stringify({ heroReport, servicesReport, contactReport, footerReport }, null, 2)}`);
 }
 
 console.log(

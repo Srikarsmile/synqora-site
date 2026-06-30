@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from
 
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
+const serviceFocusItems = ["Websites", "AI tools", "Automation"];
 
 const LazyShaderGradientCanvas = lazy(() => (
   import("@shadergradient/react").then((module) => ({ default: module.ShaderGradientCanvas }))
@@ -18,6 +19,7 @@ const textScreens = [
     eyebrow: "Synqora AI agency",
     title: "Websites and AI systems.",
     copy: "Founder-led builds from idea to launch.",
+    cta: "Start a build",
     tone: "hero",
     align: "center",
   },
@@ -100,7 +102,7 @@ function ContactForm() {
         </label>
       </div>
 
-      <label className="contact-field">
+      <label className="contact-field mobile-optional-field">
         <span>Project type</span>
         <select name="project">
           <option>Website</option>
@@ -111,11 +113,11 @@ function ContactForm() {
       </label>
 
       <div className="contact-field-row">
-        <label className="contact-field">
+        <label className="contact-field mobile-optional-field">
           <span>Budget</span>
           <input name="budget" type="text" inputMode="text" placeholder="Your range" />
         </label>
-        <label className="contact-field">
+        <label className="contact-field mobile-optional-field">
           <span>Timeline</span>
           <input name="timeline" type="text" placeholder="When should it launch?" />
         </label>
@@ -133,7 +135,16 @@ function ContactForm() {
       <button className="contact-submit" type="submit">
         Send enquiry
       </button>
+      <p className="contact-trust">We reply within 24 hours with the clearest first build path.</p>
     </form>
+  );
+}
+
+function ScreenCta({ children }) {
+  return (
+    <a className="screen-cta" href="#contact">
+      {children}
+    </a>
   );
 }
 
@@ -528,9 +539,19 @@ function TextScreen({ screen, index }) {
           {screen.title}
         </Heading>
         <p className="screen-copy-line">{screen.copy}</p>
+        {screen.id === "services" ? (
+          <ul className="service-focus-list" aria-label="Synqora service focus">
+            {serviceFocusItems.map((item) => (
+              <li className="service-focus-item" key={item}>
+                {item}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {screen.note ? (
           <p className="screen-note">{screen.note === CONTACT_EMAIL ? <EmailLink /> : screen.note}</p>
         ) : null}
+        {screen.cta ? <ScreenCta>{screen.cta}</ScreenCta> : null}
       </div>
     </section>
   );

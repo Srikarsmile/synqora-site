@@ -3,6 +3,7 @@ dist/
 .npm-cache/
 .superpowers/
 qa/
+product-design-audit/
 .claude/
 .tmp/
 _unused_assets/
