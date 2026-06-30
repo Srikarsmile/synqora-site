@@ -123,8 +123,16 @@ const stabilityReport = await page.evaluate(async () => {
 });
 
 const entryReport = await page.evaluate(async () => {
+  const contact = document.querySelector("#contact");
   const form = document.querySelector("#contact .contact-form");
-  if (!form) return { visibleSamples: [], minVisibleOpacity: -1, unstableTransforms: [] };
+  if (!contact || !form) {
+    return {
+      visibleSamples: [],
+      minVisibleOpacity: -1,
+      unstableBackdropVariables: [],
+      unstableTransforms: [],
+    };
+  }
 
   window.scrollTo({ top: window.innerHeight * 4, behavior: "auto" });
   await new Promise((resolve) => setTimeout(resolve, 260));
@@ -136,7 +144,11 @@ const entryReport = await page.evaluate(async () => {
     const style = getComputedStyle(form);
     const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
     if (visibleHeight > 24) {
+      const contactStyle = getComputedStyle(contact);
       samples.push({
+        ambientOpacity: contactStyle.getPropertyValue("--screen-ambient-opacity").trim(),
+        depthOpacity: contactStyle.getPropertyValue("--depth-field-opacity").trim(),
+        gradientOpacity: contactStyle.getPropertyValue("--screen-gradient-opacity").trim(),
         opacity: Number(style.opacity),
         transform: style.transform,
         visibleHeight: Math.round(visibleHeight),
@@ -146,9 +158,20 @@ const entryReport = await page.evaluate(async () => {
   }
 
   const firstTransform = samples[0]?.transform ?? "";
+  const firstBackdropKey = samples[0]
+    ? `${samples[0].gradientOpacity}|${samples[0].ambientOpacity}|${samples[0].depthOpacity}`
+    : "";
   return {
     visibleSamples: samples.slice(0, 8),
     minVisibleOpacity: Math.min(...samples.map((sample) => sample.opacity)),
+    unstableBackdropVariables: samples
+      .filter((sample) => `${sample.gradientOpacity}|${sample.ambientOpacity}|${sample.depthOpacity}` !== firstBackdropKey)
+      .slice(0, 4)
+      .map((sample) => ({
+        ambientOpacity: sample.ambientOpacity,
+        depthOpacity: sample.depthOpacity,
+        gradientOpacity: sample.gradientOpacity,
+      })),
     unstableTransforms: samples
       .filter((sample) => sample.transform !== firstTransform)
       .slice(0, 4)
@@ -243,6 +266,9 @@ if (entryReport.minVisibleOpacity < 0.98) {
 }
 if (entryReport.unstableTransforms.length > 0) {
   failures.push(`Contact form transform should stay stable while entering the viewport: ${JSON.stringify(entryReport)}.`);
+}
+if (entryReport.unstableBackdropVariables.length > 0) {
+  failures.push(`Contact backdrop variables should not change while the form is visible: ${JSON.stringify(entryReport)}.`);
 }
 if (contactVisualByteDiff > 800) {
   failures.push(`Contact form crop should not visually flicker while idle: ${contactVisualByteDiff} changed PNG bytes.`);

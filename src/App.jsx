@@ -18,7 +18,7 @@ const textScreens = [
     label: "Start",
     eyebrow: "Synqora AI agency",
     title: "Websites and AI systems.",
-    copy: "Founder-led builds from idea to launch.",
+    copy: "Bring us the messy problem. We'll turn it into a website, AI tool, or workflow people can use.",
     cta: "Start a build",
     tone: "hero",
     align: "center",
@@ -376,6 +376,20 @@ function DepthScrollController({ panelCount }) {
         const restrainedDepth = stableDepth || mobileMotion;
         const cache = panelStyleCaches[index];
         const style = panel.style;
+
+        if (stableDepth) {
+          setCachedProperty(style, cache, "--screen-distance", "0.000");
+          setCachedProperty(style, cache, "--screen-copy-opacity", "1");
+          setCachedProperty(style, cache, "--screen-copy-y", "0px");
+          setCachedProperty(style, cache, "--screen-copy-scale", "1");
+          setCachedProperty(style, cache, "--screen-depth-z", "0px");
+          setCachedProperty(style, cache, "--screen-layer", "130");
+          setCachedProperty(style, cache, "--screen-gradient-opacity", "0.340");
+          setCachedProperty(style, cache, "--screen-ambient-opacity", "0");
+          setCachedProperty(style, cache, "--depth-field-opacity", "0");
+          setCachedProperty(style, cache, "--depth-field-y", "0px");
+          return;
+        }
 
         if (!isRenderable) {
           const parkedDistance = index < scrollCurrent ? "-2.000" : "2.000";

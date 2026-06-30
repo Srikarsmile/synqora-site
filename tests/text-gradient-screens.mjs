@@ -12,7 +12,7 @@ const manifest = readFileSync(resolve(root, "public/site.webmanifest"), "utf8");
 const staticFailures = [];
 const requiredContentTokens = [
   "Websites and AI systems.",
-  "Founder-led builds from idea to launch.",
+  "Bring us the messy problem. We'll turn it into a website, AI tool, or workflow people can use.",
   "Websites",
   "AI assistants",
   "automations",
@@ -58,7 +58,7 @@ requiredContentTokens.forEach((token) => {
   "Turn one slow task into an AI tool.",
   "Premium websites and AI systems, built for modern teams.",
   "Synqora turns your offer, workflow, or idea",
-  "Founder-led strategy, design, and implementation.",
+  "Founder-led builds from idea to launch.",
   "Learn AI. Build AI. Deploy AI.",
   "teaches teams how to use AI",
   "AI Training",
@@ -208,7 +208,7 @@ if (!report.wordmarkVisible) failures.push("Centered wordmark text is missing.")
 if (report.hero.title !== "Websites and AI systems.") {
   failures.push(`Hero title should be shorter: ${report.hero.title}`);
 }
-if (report.hero.copy.length > 48) {
+if (report.hero.copy.length > 110) {
   failures.push(`Hero copy is still too long: ${report.hero.copy.length} characters.`);
 }
 if (report.hero.noteExists) {
