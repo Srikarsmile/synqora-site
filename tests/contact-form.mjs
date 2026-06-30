@@ -115,6 +115,40 @@ const stabilityReport = await page.evaluate(async () => {
   };
 });
 
+const entryReport = await page.evaluate(async () => {
+  const form = document.querySelector("#contact .contact-form");
+  if (!form) return { visibleSamples: [], minVisibleOpacity: -1, unstableTransforms: [] };
+
+  window.scrollTo({ top: window.innerHeight * 4, behavior: "auto" });
+  await new Promise((resolve) => setTimeout(resolve, 260));
+  window.scrollTo({ top: window.innerHeight * 5, behavior: "smooth" });
+
+  const samples = [];
+  for (let index = 0; index < 72; index += 1) {
+    const rect = form.getBoundingClientRect();
+    const style = getComputedStyle(form);
+    const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+    if (visibleHeight > 24) {
+      samples.push({
+        opacity: Number(style.opacity),
+        transform: style.transform,
+        visibleHeight: Math.round(visibleHeight),
+      });
+    }
+    await new Promise((resolveFrame) => requestAnimationFrame(resolveFrame));
+  }
+
+  const firstTransform = samples[0]?.transform ?? "";
+  return {
+    visibleSamples: samples.slice(0, 8),
+    minVisibleOpacity: Math.min(...samples.map((sample) => sample.opacity)),
+    unstableTransforms: samples
+      .filter((sample) => sample.transform !== firstTransform)
+      .slice(0, 4)
+      .map((sample) => sample.transform),
+  };
+});
+
 await browser.close();
 
 const failures = [...staticFailures];
@@ -156,9 +190,15 @@ if (stabilityReport.minOpacity < 0.98) failures.push(`Contact form opacity shoul
 if (stabilityReport.topDrift > 1 || stabilityReport.leftDrift > 1) {
   failures.push(`Contact form should not drift after settling: top=${stabilityReport.topDrift.toFixed(2)}, left=${stabilityReport.leftDrift.toFixed(2)}.`);
 }
+if (entryReport.minVisibleOpacity < 0.98) {
+  failures.push(`Contact form should not fade in while entering the viewport: ${JSON.stringify(entryReport)}.`);
+}
+if (entryReport.unstableTransforms.length > 0) {
+  failures.push(`Contact form transform should stay stable while entering the viewport: ${JSON.stringify(entryReport)}.`);
+}
 
 if (failures.length > 0) {
-  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, stabilityReport }, null, 2)}`);
+  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, stabilityReport, entryReport }, null, 2)}`);
 }
 
 console.log(`Contact form passed: ${report.fieldCount} fields at ${report.formLeft}-${report.formRight}.`);

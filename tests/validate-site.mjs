@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -6,6 +6,11 @@ const app = readFileSync(resolve(root, "src/App.jsx"), "utf8");
 const css = readFileSync(resolve(root, "src/styles.css"), "utf8");
 const html = readFileSync(resolve(root, "index.html"), "utf8");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+
+const removedAssetPaths = [
+  "public/assets/nano",
+  "public/assets/pet",
+];
 
 const requiredAppTokens = [
   "const textScreens",
@@ -76,6 +81,7 @@ const checks = [
   ],
   ["No unused hero image preload", !html.includes('rel="preload"') && !html.includes("synqora-hero-nano.webp")],
   ["No external font stylesheet", !html.includes("fonts.googleapis.com") && !html.includes("fonts.gstatic.com")],
+  ["Unused generated image and pet assets removed", removedAssetPaths.every((path) => !existsSync(resolve(root, path)))],
   ["HTML root loader is text-only", !html.includes("<img") && html.includes("Loading")],
   ["Typography uses system Apple stack", css.includes("-apple-system") && css.includes("SF Pro Display")],
   ["Typography does not use negative tracking", !css.includes("letter-spacing: -")],

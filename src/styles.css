@@ -642,10 +642,8 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   backface-visibility: hidden;
   contain: layout paint style;
   isolation: isolate;
-  opacity: var(--screen-copy-opacity);
-  transform: translateY(-40%) translate3d(0, var(--screen-copy-y), var(--screen-depth-z)) scale(var(--screen-copy-scale));
-  transform-style: preserve-3d;
-  will-change: transform, opacity;
+  opacity: 1;
+  transform: translateY(-40%);
 }
 
 .contact-field-row {
