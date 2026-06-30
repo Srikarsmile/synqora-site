@@ -1,5 +1,13 @@
 @font-face {
   font-family: "Helvetica Neue Synqora";
+  src: url("/fonts/helvetica-neue/HelveticaNeueLight.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: "Helvetica Neue Synqora";
   src: url("/fonts/helvetica-neue/HelveticaNeueRoman.otf") format("opentype");
   font-display: swap;
   font-style: normal;
@@ -149,6 +157,9 @@ body {
   --screen-ambient-opacity: 0.58;
   --depth-field-opacity: 0.6;
   --depth-field-y: 0px;
+  --screen-title-size: 5.8rem;
+  --screen-title-measure: 9.2ch;
+  --screen-title-line: 0.92;
   position: relative;
   position: sticky;
   top: 0;
@@ -172,18 +183,25 @@ body {
 }
 
 .text-screen[data-align="left"] {
+  --screen-title-size: 4.85rem;
+  --screen-title-measure: 12.6ch;
+  --screen-title-line: 0.94;
   justify-items: start;
   padding-left: 92px;
   padding-right: 44vw;
 }
 
 .text-screen[data-align="right"] {
+  --screen-title-size: 4.85rem;
+  --screen-title-measure: 12.6ch;
+  --screen-title-line: 0.94;
   justify-items: end;
   padding-right: 92px;
   padding-left: 44vw;
 }
 
 .text-screen[data-align="center"] {
+  --screen-title-measure: 11ch;
   justify-items: center;
   padding-right: 42px;
   padding-left: 42px;
@@ -545,13 +563,13 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 
 .text-screen[data-align="left"] .screen-copy {
   justify-items: start;
-  width: min(570px, 100%);
+  width: min(680px, 100%);
   text-align: left;
 }
 
 .text-screen[data-align="right"] .screen-copy {
   justify-items: end;
-  width: min(570px, 100%);
+  width: min(680px, 100%);
   text-align: right;
 }
 
@@ -573,20 +591,20 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 .screen-title {
-  max-width: 9.2ch;
+  max-width: var(--screen-title-measure);
   margin: 0;
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 5.8rem;
-  font-weight: 700;
+  font-size: var(--screen-title-size);
+  font-weight: 300;
   letter-spacing: 0;
-  line-height: 0.92;
+  line-height: var(--screen-title-line);
   text-wrap: balance;
   text-shadow: 0 2px 38px rgba(58, 36, 24, 0.26);
 }
 
 .text-screen[data-align="center"] .screen-title {
-  max-width: 11ch;
+  max-width: var(--screen-title-measure);
 }
 
 .screen-copy-line {
@@ -846,7 +864,7 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   margin: 0;
   font-family: var(--font-display);
   font-size: 6.8rem;
-  font-weight: 740;
+  font-weight: 300;
   letter-spacing: 0;
   line-height: 0.9;
   text-wrap: balance;
@@ -914,9 +932,9 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 @media (max-width: 1100px) {
-  .screen-title {
-    max-width: 10.4ch;
-    font-size: 4.9rem;
+  .text-screen {
+    --screen-title-size: 4.9rem;
+    --screen-title-measure: 10.4ch;
   }
 
   .screen-copy-line {
@@ -949,6 +967,9 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   }
 
   .text-screen {
+    --screen-title-size: 4.1rem;
+    --screen-title-measure: 9.2ch;
+    --screen-title-line: 0.96;
     padding: 84px 22px 52px;
   }
 
@@ -1010,12 +1031,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
     font-size: 0.84rem;
   }
 
-  .screen-title {
-    max-width: 9.2ch;
-    font-size: 4.1rem;
-    line-height: 0.96;
-  }
-
   .screen-copy-line {
     max-width: 24rem;
     font-size: 1.16rem;
@@ -1027,6 +1042,9 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   }
 
   .screen-gradient-contact {
+    --screen-title-size: 2.55rem;
+    --screen-title-measure: 11ch;
+    --screen-title-line: 0.94;
     align-content: start;
     gap: 14px;
     padding-top: 72px;
@@ -1040,12 +1058,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 
   .screen-gradient-contact .screen-eyebrow {
     font-size: 0.78rem;
-  }
-
-  .screen-gradient-contact .screen-title {
-    max-width: 11ch;
-    font-size: 2.55rem;
-    line-height: 0.94;
   }
 
   .screen-gradient-contact .screen-copy-line {
@@ -1155,8 +1167,14 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 @media (max-width: 460px) {
-  .screen-title {
-    font-size: 3.35rem;
+  .text-screen {
+    --screen-title-size: 3.35rem;
+  }
+
+  .text-screen.screen-gradient-contact {
+    --screen-title-size: 2.55rem;
+    --screen-title-measure: 11ch;
+    --screen-title-line: 0.94;
   }
 
   .screen-copy-line {

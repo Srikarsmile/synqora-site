@@ -92,15 +92,33 @@ const report = await page.evaluate(() => {
   const readScreen = (screen) => {
     const rect = screen.getBoundingClientRect();
     const style = getComputedStyle(screen);
+    const copyGroup = screen.querySelector(".screen-copy");
     const title = screen.querySelector(".screen-title");
     const copy = screen.querySelector(".screen-copy-line");
     const note = screen.querySelector(".screen-note");
+    const rectOf = (element) => {
+      const elementRect = element?.getBoundingClientRect();
+      return elementRect
+        ? {
+          bottom: Math.round(elementRect.bottom),
+          height: Math.round(elementRect.height),
+          left: Math.round(elementRect.left),
+          right: Math.round(elementRect.right),
+          top: Math.round(elementRect.top),
+          width: Math.round(elementRect.width),
+        }
+        : null;
+    };
+
     return {
       backgroundImage: style.backgroundImage,
+      copyGroupBox: rectOf(copyGroup),
       copyColor: copy ? getComputedStyle(copy).color : "",
       height: Math.round(rect.height),
+      id: screen.id,
       noteColor: note ? getComputedStyle(note).color : "",
       title: title?.textContent?.trim() ?? "",
+      titleBox: rectOf(title),
       titleColor: title ? getComputedStyle(title).color : "",
     };
   };
@@ -126,12 +144,45 @@ const report = await page.evaluate(() => {
           screenCount: screens.length,
           screens: screens.map(readScreen),
           scrolledY: Math.round(window.scrollY),
+          viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
         });
       });
     });
   });
 });
+
+const desktopFitReports = [];
+for (const id of ["services", "method", "examples", "answers", "contact"]) {
+  await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(420);
+  desktopFitReports.push(await page.evaluate((screenId) => {
+    const screen = document.getElementById(screenId);
+    const copyGroup = screen?.querySelector(".screen-copy");
+    const title = screen?.querySelector(".screen-title");
+    const rectOf = (element) => {
+      const rect = element?.getBoundingClientRect();
+      return rect
+        ? {
+          bottom: Math.round(rect.bottom),
+          height: Math.round(rect.height),
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+        }
+        : null;
+    };
+
+    return {
+      id: screenId,
+      copyGroupBox: rectOf(copyGroup),
+      titleBox: rectOf(title),
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+    };
+  }, id));
+}
 
 await page.locator("#contact").scrollIntoViewIfNeeded();
 
@@ -166,6 +217,24 @@ if (report.hero.noteExists) {
 if (report.contactVisibleEmailCount !== 0) {
   failures.push(`Contact screen should not show the email after adding the form: ${report.contactVisibleEmailCount}.`);
 }
+desktopFitReports.forEach((screen) => {
+  if (screen.copyGroupBox) {
+    if (screen.copyGroupBox.top < 96 || screen.copyGroupBox.bottom > screen.viewportHeight - 56) {
+      failures.push(`Desktop ${screen.id} text group should fit comfortably in one viewport: ${JSON.stringify(screen.copyGroupBox)}.`);
+    }
+    if (screen.copyGroupBox.right > screen.viewportWidth - 56 || screen.copyGroupBox.left < 56) {
+      failures.push(`Desktop ${screen.id} text group should not sit against the browser edge: ${JSON.stringify(screen.copyGroupBox)}.`);
+    }
+  }
+  if (screen.titleBox) {
+    if (screen.titleBox.height > screen.viewportHeight * 0.52) {
+      failures.push(`Desktop ${screen.id} heading wraps into a too-tall column: ${JSON.stringify(screen.titleBox)}.`);
+    }
+    if (screen.titleBox.width < 520) {
+      failures.push(`Desktop ${screen.id} heading measure is too narrow to read comfortably: ${JSON.stringify(screen.titleBox)}.`);
+    }
+  }
+});
 report.screens.forEach((screen, index) => {
   if (screen.height < report.viewportHeight * 0.94) {
     failures.push(`Screen ${index + 1} is not viewport-height: ${screen.height}px.`);
@@ -192,7 +261,7 @@ if (Math.abs(report.secondScreenTop) > report.viewportHeight * 0.5) {
 }
 
 if (failures.length > 0) {
-  throw new Error(`Text gradient screens failed:\n${failures.join("\n")}\n\n${JSON.stringify(report, null, 2)}`);
+  throw new Error(`Text gradient screens failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, desktopFitReports }, null, 2)}`);
 }
 
 console.log(`Text gradient screens passed: ${report.screenCount} full-screen gradient text sections.`);

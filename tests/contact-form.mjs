@@ -184,7 +184,9 @@ if (report.formLeft < 24 || report.formLeft > report.viewportWidth * 0.2) {
   failures.push(`Contact form should occupy the empty left side without clipping: left=${report.formLeft}.`);
 }
 if (report.formRight > report.viewportWidth * 0.52) failures.push(`Contact form should not collide with the right copy: right=${report.formRight}.`);
-if (report.copyLeft < report.viewportWidth * 0.52) failures.push(`Contact copy should stay on the right side: left=${report.copyLeft}.`);
+if (report.copyLeft - report.formRight < 144) {
+  failures.push(`Contact copy should stay clearly separated from the form: formRight=${report.formRight}, copyLeft=${report.copyLeft}.`);
+}
 if (report.formTop < 160 || report.formTop > 420) failures.push(`Contact form should sit vertically centered in the open area: top=${report.formTop}.`);
 if (report.visibleEmailCount !== 0) failures.push(`Contact screen should not show the email beside the form: ${report.visibleEmailCount}.`);
 if (report.stableDepth !== "true") failures.push(`Contact screen should opt into stable depth rendering: ${report.stableDepth}.`);
