@@ -6,31 +6,38 @@ const root = resolve(import.meta.dirname, "..");
 const baseUrl = process.env.TEST_BASE_URL ?? "http://127.0.0.1:5173/";
 const app = readFileSync(resolve(root, "src/App.jsx"), "utf8");
 const css = readFileSync(resolve(root, "src/styles.css"), "utf8");
+const pkg = readFileSync(resolve(root, "package.json"), "utf8");
 
 const staticFailures = [];
 [
-  "scroll-behavior: smooth",
-  "scroll-snap-type: y proximity",
+  'import Lenis from "lenis"',
+  "function SmoothScrollController",
+  "new Lenis",
+  "lenis.on(\"scroll\"",
+  "--scroll-progress",
+  "--scroll-velocity",
+  "--scroll-drift-x",
+  "--scroll-drift-y",
+  "data-smooth-scroll",
   "scroll-snap-align: start",
   "scroll-snap-stop: normal",
   "overscroll-behavior-y: contain",
 ].forEach((token) => {
-  if (!css.includes(token)) staticFailures.push(`Missing native scroll smoothing token: ${token}`);
+  if (!app.includes(token) && !css.includes(token)) {
+    staticFailures.push(`Missing DepthGallery-style smooth scroll token: ${token}`);
+  }
 });
 
-if (!css.includes("@media (prefers-reduced-motion: reduce)") || !css.includes("scroll-behavior: auto")) {
-  staticFailures.push("Reduced motion should disable smooth scrolling.");
+if (!pkg.includes("\"lenis\"")) {
+  staticFailures.push("Package should include lenis for smooth scroll interpolation.");
 }
 
 [
-  'addEventListener("scroll"',
   "getBoundingClientRect()",
-  "requestAnimationFrame(render)",
-  "Lenis",
   "locomotive-scroll",
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
-    staticFailures.push(`Scroll smoothness should stay native, found: ${token}`);
+    staticFailures.push(`Scroll smoothing should avoid layout-heavy or unrelated tokens, found: ${token}`);
   }
 });
 
@@ -57,7 +64,7 @@ const report = await page.evaluate(async () => {
   const footerSnapAlign = footer ? getComputedStyle(footer).scrollSnapAlign : "";
   const before = window.scrollY;
   window.scrollTo({ top: window.innerHeight * 1.1, behavior: "smooth" });
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  await new Promise((resolve) => setTimeout(resolve, 900));
   const after = window.scrollY;
   const secondScreenTop = Math.round(screens[1]?.getBoundingClientRect().top ?? 9999);
 
@@ -65,9 +72,13 @@ const report = await page.evaluate(async () => {
     after,
     before,
     footerSnapAlign,
+    rootDataset: document.documentElement.dataset.smoothScroll ?? "",
     rootOverscroll: rootStyle.overscrollBehaviorY,
-    rootScrollBehavior: rootStyle.scrollBehavior,
     rootSnapType: rootStyle.scrollSnapType,
+    scrollDriftX: rootStyle.getPropertyValue("--scroll-drift-x").trim(),
+    scrollDriftY: rootStyle.getPropertyValue("--scroll-drift-y").trim(),
+    scrollProgress: Number(rootStyle.getPropertyValue("--scroll-progress") || 0),
+    scrollVelocity: Number(rootStyle.getPropertyValue("--scroll-velocity") || 0),
     secondScreenTop,
     sectionSnapAligns,
     viewportHeight: window.innerHeight,
@@ -78,18 +89,20 @@ await browser.close();
 
 const failures = [...staticFailures];
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
-if (report.rootScrollBehavior !== "smooth") failures.push(`Root should use smooth scroll behavior: ${report.rootScrollBehavior}.`);
-if (!report.rootSnapType.includes("y")) {
-  failures.push(`Root should use y-axis snapping: ${report.rootSnapType}.`);
-}
+if (report.rootDataset !== "active") failures.push(`Lenis smooth scroll controller should be active: ${report.rootDataset}.`);
+if (report.rootSnapType !== "none") failures.push(`Root scroll snap should be disabled for smoother interpolation: ${report.rootSnapType}.`);
 if (report.rootOverscroll !== "contain") failures.push(`Root should contain overscroll bounce: ${report.rootOverscroll}.`);
 if (report.sectionSnapAligns.some((value) => value !== "start")) {
   failures.push(`Text screens should snap from their start edges: ${report.sectionSnapAligns.join(", ")}.`);
 }
 if (report.footerSnapAlign !== "start") failures.push(`Footer should snap from start edge: ${report.footerSnapAlign}.`);
 if (report.after <= report.before + 80) failures.push(`Smooth scroll should move the page: ${report.before} -> ${report.after}.`);
-if (Math.abs(report.secondScreenTop) > report.viewportHeight * 0.55) {
-  failures.push(`Smooth scroll should settle near the next full-screen section: top=${report.secondScreenTop}.`);
+if (report.scrollProgress <= 0) failures.push(`Scroll progress CSS variable should update: ${report.scrollProgress}.`);
+if (!report.scrollDriftX.endsWith("px") || !report.scrollDriftY.endsWith("px")) {
+  failures.push(`Scroll drift variables should be px values: ${report.scrollDriftX}, ${report.scrollDriftY}.`);
+}
+if (Math.abs(report.secondScreenTop) > report.viewportHeight * 0.78) {
+  failures.push(`Smooth scroll should move toward the next full-screen section: top=${report.secondScreenTop}.`);
 }
 
 if (failures.length > 0) {

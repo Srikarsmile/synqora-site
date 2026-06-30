@@ -14,8 +14,10 @@ const staticFailures = [];
   "function CrowdFooter",
   "site-crowd-footer",
   "crowd-canvas",
-  "Stay extraordinary",
-  "Don't be the same",
+  "Stay",
+  "extraordinary.",
+  "Don't be",
+  "the same.",
   "info@synqora.tech",
   "mailto:info@synqora.tech",
   "email-link",
@@ -85,6 +87,7 @@ const report = await page.evaluate(async () => {
     label: footer?.querySelector(".crowd-footer-label")?.textContent?.trim() ?? "",
     hasLabelElement: Boolean(footer?.querySelector(".crowd-footer-label")),
     title: footer?.querySelector(".crowd-footer-title")?.textContent?.trim() ?? "",
+    titleLines: [...(footer?.querySelectorAll(".crowd-footer-title span") ?? [])].map((line) => line.textContent?.trim() ?? ""),
     email: footer?.querySelector(".crowd-footer-email")?.textContent?.trim() ?? "",
     emailHref: footer?.querySelector(".crowd-footer-email .email-link")?.getAttribute("href") ?? "",
     emailInitialDecoration: footer?.querySelector(".crowd-footer-email .email-link")
@@ -121,8 +124,8 @@ if (!report.afterMain) failures.push("Crowd footer should render directly after 
 if (app.includes("Crowd Canvas") || report.label.includes("Crowd Canvas") || report.hasLabelElement) {
   failures.push(`Crowd footer label should be removed, found: ${report.label}`);
 }
-if (!report.title.includes("Stay extraordinary") || !report.title.includes("Don't be the same")) {
-  failures.push(`Crowd footer title is wrong: ${report.title}`);
+if (report.titleLines.join(" ") !== "Stay extraordinary. Don't be the same.") {
+  failures.push(`Crowd footer title is wrong: ${report.titleLines.join(" ")}`);
 }
 if (report.email !== "info@synqora.tech") failures.push(`Crowd footer email is wrong: ${report.email}`);
 if (!report.emailHref) failures.push("Crowd footer email should render as a clickable link.");
@@ -134,6 +137,9 @@ if (report.canvasWidth < 900 || report.canvasHeight < 140) {
   failures.push(`Crowd canvas is too small: ${report.canvasWidth}x${report.canvasHeight}.`);
 }
 if (!report.titleAbovePeople) failures.push("Crowd footer title should sit above the people canvas.");
+if (report.titleLines.length !== 4) {
+  failures.push(`Crowd footer title should be split into a fuller four-line composition: ${JSON.stringify(report.titleLines)}`);
+}
 if (!report.emailNearBottom) failures.push("Crowd footer email should sit near the bottom edge.");
 if (!report.emailAbovePeople) failures.push("Crowd footer email should sit above the people canvas.");
 if (report.footerHeight < 650) failures.push(`Crowd footer should feel like a full screen: ${report.footerHeight}px.`);

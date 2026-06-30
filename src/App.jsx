@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import Lenis from "lenis";
 
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
@@ -249,6 +250,84 @@ function DepthMotionField({ align, tone }) {
       </div>
     </div>
   );
+}
+
+function SmoothScrollController() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    let frame = 0;
+    let idleTimer = 0;
+
+    const setScrollVariables = ({
+      progress = 0,
+      velocity = 0,
+    } = {}) => {
+      const clampedProgress = Math.max(0, Math.min(1, progress));
+      const clampedVelocity = Math.max(-2.2, Math.min(2.2, velocity));
+      const intensity = Math.min(1, Math.abs(clampedVelocity) * 0.26);
+
+      root.style.setProperty("--scroll-progress", clampedProgress.toFixed(4));
+      root.style.setProperty("--scroll-velocity", clampedVelocity.toFixed(4));
+      root.style.setProperty("--scroll-intensity", intensity.toFixed(4));
+      root.style.setProperty("--scroll-drift-x", `${(clampedVelocity * 12).toFixed(2)}px`);
+      root.style.setProperty("--scroll-drift-y", `${(clampedVelocity * -20).toFixed(2)}px`);
+
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        root.style.setProperty("--scroll-velocity", "0");
+        root.style.setProperty("--scroll-intensity", "0");
+        root.style.setProperty("--scroll-drift-x", "0px");
+        root.style.setProperty("--scroll-drift-y", "0px");
+      }, 160);
+    };
+
+    setScrollVariables();
+
+    if (reducedMotion) {
+      root.setAttribute("data-smooth-scroll", "reduced");
+      return () => {
+        root.removeAttribute("data-smooth-scroll");
+        window.clearTimeout(idleTimer);
+      };
+    }
+
+    root.setAttribute("data-smooth-scroll", "active");
+    const lenis = new Lenis({
+      autoRaf: false,
+      duration: 1.08,
+      lerp: 0.085,
+      smoothWheel: true,
+      syncTouch: true,
+      touchMultiplier: 1.08,
+      wheelMultiplier: 0.82,
+    });
+
+    lenis.on("scroll", ({ progress, velocity }) => {
+      setScrollVariables({ progress, velocity });
+    });
+
+    const raf = (time) => {
+      lenis.raf(time);
+      frame = window.requestAnimationFrame(raf);
+    };
+
+    const handleResize = () => lenis.resize();
+
+    frame = window.requestAnimationFrame(raf);
+    window.addEventListener("resize", handleResize, { passive: true });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(idleTimer);
+      window.removeEventListener("resize", handleResize);
+      lenis.destroy();
+      root.removeAttribute("data-smooth-scroll");
+      setScrollVariables();
+    };
+  }, []);
+
+  return null;
 }
 
 function TextScreen({ screen, index }) {
@@ -738,8 +817,10 @@ function CrowdFooter() {
     <footer className="site-crowd-footer" aria-labelledby="crowd-footer-title">
       <div className="crowd-footer-copy">
         <h2 className="crowd-footer-title" id="crowd-footer-title">
-          <span>Stay extraordinary.</span>
-          <span>Don't be the same.</span>
+          <span>Stay</span>
+          <span>extraordinary.</span>
+          <span>Don't be</span>
+          <span>the same.</span>
         </h2>
       </div>
       <div className="crowd-canvas-wrap" aria-hidden="true">
@@ -755,6 +836,7 @@ function CrowdFooter() {
 export function App() {
   return (
     <div className="site-shell">
+      <SmoothScrollController />
       <header className="site-header">
         <p className="wordmark">Synqora</p>
       </header>

@@ -11,6 +11,7 @@ const staticFailures = [];
   "@media (max-width: 760px)",
   "--screen-height",
   "100dvh",
+  "100lvh",
   "screen-gradient-contact",
   "scroll-snap-type: none",
   "crowd-footer-title",
@@ -35,6 +36,27 @@ page.on("console", (message) => {
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
 await page.waitForTimeout(900);
+
+const screenCoverage = [];
+for (const id of ["hero", "services", "method", "examples", "answers", "contact"]) {
+  await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(420);
+  screenCoverage.push(await page.evaluate((screenId) => {
+    const screen = document.getElementById(screenId);
+    const rect = screen?.getBoundingClientRect();
+    const sampleId = (y) => document.elementFromPoint(Math.round(window.innerWidth / 2), y)?.closest(".text-screen")?.id ?? "";
+
+    return {
+      id: screenId,
+      backgroundImage: screen ? getComputedStyle(screen).backgroundImage : "",
+      bottomOwner: sampleId(window.innerHeight - 2),
+      height: Math.round(rect?.height ?? 0),
+      middleOwner: sampleId(Math.round(window.innerHeight / 2)),
+      topOwner: sampleId(2),
+      viewportHeight: window.innerHeight,
+    };
+  }, id));
+}
 
 await page.locator("#contact").scrollIntoViewIfNeeded();
 await page.waitForTimeout(700);
@@ -86,6 +108,7 @@ const footerReport = await page.evaluate(() => {
     footer: rectOf(".site-crowd-footer"),
     pet: rectOf(".site-pet"),
     title: rectOf(".crowd-footer-title"),
+    titleLines: [...document.querySelectorAll(".crowd-footer-title span")].map((line) => line.textContent?.trim() ?? ""),
     bodyBackground: getComputedStyle(document.body).backgroundColor,
     footerBackground: getComputedStyle(document.querySelector(".site-crowd-footer")).backgroundColor,
     footerBackgroundImage: getComputedStyle(document.querySelector(".site-crowd-footer")).backgroundImage,
@@ -108,6 +131,18 @@ const isWhiteBackground = (color) => {
 };
 
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
+
+screenCoverage.forEach((screen) => {
+  if (Math.abs(screen.height - screen.viewportHeight) > 2) {
+    failures.push(`Mobile ${screen.id} should cover exactly one visible screen: ${JSON.stringify(screen)}.`);
+  }
+  if (!screen.backgroundImage.includes("gradient")) {
+    failures.push(`Mobile ${screen.id} should own a full-screen gradient: ${JSON.stringify(screen)}.`);
+  }
+  if ([screen.topOwner, screen.middleOwner, screen.bottomOwner].some((owner) => owner !== screen.id)) {
+    failures.push(`Mobile ${screen.id} should cover the full viewport without another section leaking through: ${JSON.stringify(screen)}.`);
+  }
+});
 
 if (!contactReport.screen || contactReport.screen.height > contactReport.viewportHeight + 72) {
   failures.push(`Mobile contact should fit close to one phone viewport: ${JSON.stringify(contactReport.screen)}.`);
@@ -143,10 +178,16 @@ if (footerReport.htmlScrollSnapType !== "none" || footerReport.htmlScrollBehavio
 if (!footerReport.title || !footerReport.email) {
   failures.push(`Mobile footer title/email are missing: ${JSON.stringify(footerReport)}.`);
 }
-if (footerReport.title && footerReport.title.height > 104) {
-  failures.push(`Mobile footer headline should fit as a compact two-line statement: ${JSON.stringify(footerReport.title)}.`);
+if (footerReport.titleLines.join(" ") !== "Stay extraordinary. Don't be the same.") {
+  failures.push(`Mobile footer headline copy is wrong: ${JSON.stringify(footerReport.titleLines)}.`);
 }
-if (footerReport.title && footerReport.email && footerReport.email.top - footerReport.title.bottom > 220) {
+if (footerReport.titleLines.length !== 4) {
+  failures.push(`Mobile footer headline should be a fuller four-line lockup: ${JSON.stringify(footerReport.titleLines)}.`);
+}
+if (footerReport.title && (footerReport.title.height < 178 || footerReport.title.height > 310)) {
+  failures.push(`Mobile footer headline should fill more of the screen without colliding: ${JSON.stringify(footerReport.title)}.`);
+}
+if (footerReport.title && footerReport.email && footerReport.email.top - footerReport.title.bottom > 180) {
   failures.push(`Mobile footer has too much empty space between headline and email: ${JSON.stringify(footerReport)}.`);
 }
 if (!footerReport.crowd || footerReport.crowd.height > 205) {
