@@ -14,6 +14,9 @@
   --scroll-intensity: 0;
   --scroll-drift-x: 0px;
   --scroll-drift-y: 0px;
+  --depth-scroll-target: 0;
+  --depth-scroll-current: 0;
+  --depth-active-index: 0;
 }
 
 @supports (height: 100dvh) {
@@ -76,19 +79,6 @@ body {
   pointer-events: none;
 }
 
-.lenis,
-.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
 .site-header {
   position: fixed;
   top: 0;
@@ -115,7 +105,25 @@ body {
 }
 
 .text-screen {
+  --screen-distance: 0;
+  --screen-abs-distance: 0;
+  --depth-presence: 1;
+  --screen-copy-opacity: 1;
+  --screen-copy-y: 0px;
+  --screen-copy-scale: 1;
+  --screen-depth-z: 0px;
+  --screen-blur: 0px;
+  --screen-layer: 1;
+  --screen-gradient-opacity: 0.44;
+  --screen-gradient-scale: 1.05;
+  --screen-ambient-opacity: 0.58;
+  --depth-field-opacity: 0.6;
+  --depth-field-y: 0px;
+  --depth-field-scale: 1;
   position: relative;
+  position: sticky;
+  top: 0;
+  z-index: var(--screen-layer);
   display: grid;
   height: var(--screen-height);
   min-height: var(--screen-height);
@@ -127,8 +135,11 @@ body {
   background-image: var(--screen-gradient);
   background-size: 100% 100%;
   text-align: center;
+  transform-style: preserve-3d;
+  perspective: 1200px;
   scroll-snap-align: start;
   scroll-snap-stop: normal;
+  will-change: transform;
 }
 
 .text-screen[data-align="left"] {
@@ -164,8 +175,8 @@ body {
     radial-gradient(38% 36% at 26% 30%, rgba(255, 255, 255, 0.34), transparent 70%),
     radial-gradient(42% 48% at 78% 24%, rgba(255, 255, 255, 0.2), transparent 72%),
     radial-gradient(48% 42% at 52% 82%, rgba(255, 255, 255, 0.18), transparent 70%);
-  opacity: 0.44;
-  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0) scale(1.05);
+  opacity: var(--screen-gradient-opacity);
+  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0) scale(var(--screen-gradient-scale));
   will-change: transform, opacity;
   pointer-events: none;
 }
@@ -226,8 +237,12 @@ body {
   z-index: 2;
   overflow: hidden;
   contain: layout paint style;
+  opacity: var(--depth-field-opacity);
   perspective: 1100px;
   pointer-events: none;
+  transform: translate3d(0, var(--depth-field-y), 0) scale(var(--depth-field-scale));
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
 }
 
 .depth-motion-field[data-depth-align="left"] {
@@ -340,7 +355,7 @@ body {
   background:
     radial-gradient(68% 72% at 42% 82%, rgba(255, 255, 255, 0.2), transparent 68%),
     linear-gradient(180deg, rgba(24, 20, 17, 0.1), rgba(24, 20, 17, 0.3));
-  opacity: 0.58;
+  opacity: var(--screen-ambient-opacity);
   transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0);
   will-change: transform;
   pointer-events: none;
@@ -394,9 +409,11 @@ body {
   justify-items: center;
   width: min(1100px, 100%);
   gap: 22px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
+  opacity: var(--screen-copy-opacity);
+  transform: translate3d(0, var(--screen-copy-y), var(--screen-depth-z)) scale(var(--screen-copy-scale));
   transform-origin: 50% 54%;
+  filter: blur(var(--screen-blur));
+  will-change: transform, opacity, filter;
 }
 
 .text-screen[data-align="left"] .screen-copy {

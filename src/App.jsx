@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import Lenis from "lenis";
 
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
@@ -252,12 +251,32 @@ function DepthMotionField({ align, tone }) {
   );
 }
 
-function SmoothScrollController() {
+function DepthScrollController({ panelCount }) {
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const panels = [...document.querySelectorAll(".text-screen")];
+    const maxDepthIndex = Math.max(panelCount - 1, 1);
     let frame = 0;
-    let idleTimer = 0;
+    let viewportHeight = Math.max(window.innerHeight, 1);
+    let scrollTarget = Math.min(maxDepthIndex, Math.max(0, window.scrollY / viewportHeight));
+    let scrollCurrent = scrollTarget;
+    let previousScrollCurrent = scrollCurrent;
+    let velocity = 0;
+    const scrollSmoothing = reducedMotion ? 1 : 0.12;
+    const velocityDamping = 0.12;
+    const velocityMax = 1.5;
+    const nativeScrollIntoView = Element.prototype.scrollIntoView;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (from, to, amount) => from + (to - from) * amount;
+    const readScrollBehavior = (options) => {
+      if (options && typeof options === "object" && "behavior" in options) {
+        return options.behavior === "instant" ? "auto" : options.behavior;
+      }
+
+      return "auto";
+    };
 
     const setScrollVariables = ({
       progress = 0,
@@ -272,60 +291,96 @@ function SmoothScrollController() {
       root.style.setProperty("--scroll-intensity", intensity.toFixed(4));
       root.style.setProperty("--scroll-drift-x", `${(clampedVelocity * 12).toFixed(2)}px`);
       root.style.setProperty("--scroll-drift-y", `${(clampedVelocity * -20).toFixed(2)}px`);
-
-      window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => {
-        root.style.setProperty("--scroll-velocity", "0");
-        root.style.setProperty("--scroll-intensity", "0");
-        root.style.setProperty("--scroll-drift-x", "0px");
-        root.style.setProperty("--scroll-drift-y", "0px");
-      }, 160);
+      root.style.setProperty("--depth-scroll-target", scrollTarget.toFixed(4));
+      root.style.setProperty("--depth-scroll-current", scrollCurrent.toFixed(4));
+      root.style.setProperty("--depth-active-index", String(Math.round(clamp(scrollTarget, 0, maxDepthIndex))));
     };
 
-    setScrollVariables();
+    const setPanelVariables = () => {
+      const velocityIntensity = Math.min(1, Math.abs(velocity) / velocityMax);
 
-    if (reducedMotion) {
-      root.setAttribute("data-smooth-scroll", "reduced");
-      return () => {
-        root.removeAttribute("data-smooth-scroll");
-        window.clearTimeout(idleTimer);
-      };
-    }
+      panels.forEach((panel, index) => {
+        const distance = index - scrollCurrent;
+        const absDistance = Math.min(2, Math.abs(distance));
+        const closeDistance = Math.min(1, absDistance);
+        const presence = clamp(1 - closeDistance * 0.9, 0, 1);
+        const copyOpacity = clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
+        const depthScale = 1 - Math.min(absDistance * 0.065, 0.13);
+        const copyY = distance * 52 - velocity * 150;
+        const depthZ = -absDistance * 190;
+        const blur = Math.max(0, absDistance - 0.68) * 8;
+        const layer = 100 + panels.length - Math.round(absDistance * 16);
 
-    root.setAttribute("data-smooth-scroll", "active");
-    const lenis = new Lenis({
-      autoRaf: false,
-      duration: 1.08,
-      lerp: 0.085,
-      smoothWheel: true,
-      syncTouch: true,
-      touchMultiplier: 1.08,
-      wheelMultiplier: 0.82,
-    });
-
-    lenis.on("scroll", ({ progress, velocity }) => {
-      setScrollVariables({ progress, velocity });
-    });
+        panel.style.setProperty("--screen-distance", distance.toFixed(4));
+        panel.style.setProperty("--screen-abs-distance", absDistance.toFixed(4));
+        panel.style.setProperty("--depth-presence", presence.toFixed(4));
+        panel.style.setProperty("--screen-copy-opacity", copyOpacity.toFixed(4));
+        panel.style.setProperty("--screen-copy-y", `${copyY.toFixed(2)}px`);
+        panel.style.setProperty("--screen-copy-scale", depthScale.toFixed(4));
+        panel.style.setProperty("--screen-depth-z", `${depthZ.toFixed(2)}px`);
+        panel.style.setProperty("--screen-blur", `${blur.toFixed(2)}px`);
+        panel.style.setProperty("--screen-layer", String(layer));
+        panel.style.setProperty("--screen-gradient-opacity", (0.28 + presence * 0.2 + velocityIntensity * 0.1).toFixed(4));
+        panel.style.setProperty("--screen-gradient-scale", (1.04 + velocityIntensity * 0.05).toFixed(4));
+        panel.style.setProperty("--screen-ambient-opacity", (0.32 + presence * 0.24 + velocityIntensity * 0.08).toFixed(4));
+        panel.style.setProperty("--depth-field-opacity", (0.3 + presence * 0.44 + velocityIntensity * 0.1).toFixed(4));
+        panel.style.setProperty("--depth-field-y", `${(distance * 34 - velocity * 220).toFixed(2)}px`);
+        panel.style.setProperty("--depth-field-scale", (0.92 + presence * 0.08 + velocityIntensity * 0.06).toFixed(4));
+      });
+    };
 
     const raf = (time) => {
-      lenis.raf(time);
+      void time;
+      viewportHeight = Math.max(window.innerHeight, 1);
+      scrollTarget = clamp(window.scrollY / viewportHeight, 0, maxDepthIndex);
+      scrollCurrent = lerp(scrollCurrent, scrollTarget, scrollSmoothing);
+
+      const rawVelocity = scrollCurrent - previousScrollCurrent;
+      velocity = lerp(velocity, rawVelocity, velocityDamping);
+      velocity = clamp(velocity, -velocityMax, velocityMax);
+      if (Math.abs(velocity) < 0.0001) velocity = 0;
+
+      setScrollVariables({
+        progress: clamp(scrollCurrent / maxDepthIndex, 0, 1),
+        velocity,
+      });
+      setPanelVariables();
+
+      previousScrollCurrent = scrollCurrent;
       frame = window.requestAnimationFrame(raf);
     };
 
-    const handleResize = () => lenis.resize();
+    const handleResize = () => {
+      viewportHeight = Math.max(window.innerHeight, 1);
+    };
 
+    Element.prototype.scrollIntoView = function scrollIntoViewWithDepthPanels(options) {
+      const panelIndex = panels.indexOf(this);
+      if (panelIndex >= 0) {
+        window.scrollTo({
+          top: panelIndex * viewportHeight,
+          behavior: readScrollBehavior(options),
+        });
+        return;
+      }
+
+      nativeScrollIntoView.call(this, options);
+    };
+
+    root.setAttribute("data-depth-scroll", reducedMotion ? "reduced" : "active");
+    setScrollVariables();
+    setPanelVariables();
     frame = window.requestAnimationFrame(raf);
     window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(frame);
-      window.clearTimeout(idleTimer);
       window.removeEventListener("resize", handleResize);
-      lenis.destroy();
-      root.removeAttribute("data-smooth-scroll");
+      Element.prototype.scrollIntoView = nativeScrollIntoView;
+      root.removeAttribute("data-depth-scroll");
       setScrollVariables();
     };
-  }, []);
+  }, [panelCount]);
 
   return null;
 }
@@ -373,6 +428,9 @@ function SitePet() {
     const pet = petRef.current;
     if (!pet) return undefined;
 
+    const root = document.documentElement;
+    const sections = [...document.querySelectorAll(".text-screen")];
+    let alignTimer = 0;
     let movementTimer = 0;
     let stateTimer = 0;
     let lastX = 0;
@@ -481,6 +539,12 @@ function SitePet() {
       settleHome();
     };
 
+    const syncActivePetAlign = () => {
+      const activeIndex = Math.round(Number(root.style.getPropertyValue("--depth-active-index")) || 0);
+      const activeSection = sections[Math.max(0, Math.min(sections.length - 1, activeIndex))];
+      setActivePetAlign(activeSection?.getAttribute("data-align") || "center");
+    };
+
     const readFooterLift = () => {
       if (!footerIsVisible) return 0;
 
@@ -505,13 +569,7 @@ function SitePet() {
       ? null
       : new IntersectionObserver(
         (entries) => {
-          const visibleEntries = entries.filter((entry) => entry.isIntersecting);
-          if (visibleEntries.length === 0) return;
-
-          const activeEntry = visibleEntries.reduce((best, entry) => (
-            entry.intersectionRatio > best.intersectionRatio ? entry : best
-          ));
-          setActivePetAlign(activeEntry.target.getAttribute("data-align") || "center");
+          if (entries.some((entry) => entry.isIntersecting)) syncActivePetAlign();
         },
         { threshold: [0.35, 0.6, 0.82] },
       );
@@ -532,10 +590,12 @@ function SitePet() {
     } else {
       pet.dataset.petMotion = "active";
       settleHome();
+      syncActivePetAlign();
+      alignTimer = window.setInterval(syncActivePetAlign, 240);
       movementTimer = window.setInterval(roam, 3400);
     }
 
-    document.querySelectorAll(".text-screen").forEach((section) => sectionObserver?.observe(section));
+    sections.forEach((section) => sectionObserver?.observe(section));
     if (crowdFooter) {
       footerObserver?.observe(crowdFooter);
     }
@@ -547,6 +607,7 @@ function SitePet() {
 
     return () => {
       window.clearInterval(movementTimer);
+      window.clearInterval(alignTimer);
       window.clearTimeout(stateTimer);
       sectionObserver?.disconnect();
       footerObserver?.disconnect();
@@ -836,7 +897,7 @@ function CrowdFooter() {
 export function App() {
   return (
     <div className="site-shell">
-      <SmoothScrollController />
+      <DepthScrollController panelCount={textScreens.length} />
       <header className="site-header">
         <p className="wordmark">Synqora</p>
       </header>
