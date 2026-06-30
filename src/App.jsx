@@ -1,1175 +1,771 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useGSAP } from "@gsap/react";
-import { gsap } from "gsap";
-import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
-import { MotionPathPlugin } from "gsap/MotionPathPlugin";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin, MorphSVGPlugin);
+const CONTACT_EMAIL = "info@synqora.tech";
+const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
 
-const navItems = [
-  { label: "Services", target: "services" },
-  { label: "Method", target: "method" },
-  { label: "Examples", target: "examples" },
-  { label: "FAQ", target: "faq" },
-];
+const LazyShaderGradientCanvas = lazy(() => (
+  import("@shadergradient/react").then((module) => ({ default: module.ShaderGradientCanvas }))
+));
 
-const painPoints = [
+const LazyShaderGradient = lazy(() => (
+  import("@shadergradient/react").then((module) => ({ default: module.ShaderGradient }))
+));
+
+const textScreens = [
   {
-    id: "reply",
-    label: "Customer questions",
-    title: "Reply to enquiries faster",
-    category: "Build",
-    visual: "/assets/nano/synqora-agents-nano.webp",
-    problem: "New messages wait while your team asks the same follow-up questions.",
-    build: "Synqora builds a simple intake helper that collects the details and drafts a first response.",
-    result: "Faster replies with a human still approving what goes out.",
+    id: "hero",
+    label: "Start",
+    eyebrow: "Synqora AI agency",
+    title: "Websites and AI systems.",
+    copy: "Founder-led builds from idea to launch.",
+    tone: "hero",
+    align: "center",
   },
   {
-    id: "knowledge",
-    label: "Company knowledge",
-    title: "Find answers in company files",
-    category: "Build",
-    visual: "/assets/nano/synqora-rag-nano.webp",
-    problem: "Policies, PDFs, notes, and website pages are spread across folders.",
-    build: "A private helper answers from trusted material and shows where the answer came from.",
-    result: "People stop hunting through files and still know what to trust.",
+    id: "services",
+    label: "Services",
+    eyebrow: "Services",
+    title: "Build the digital system your business needs next.",
+    copy: "Websites, AI assistants, automations, internal tools, lead flows, and knowledge systems designed around real business work.",
+    note: "Web presence, AI workflows, and business tools.",
+    tone: "services",
+    align: "right",
   },
   {
-    id: "reports",
-    label: "Operations",
-    title: "Stop copy-paste reports",
-    category: "Automate",
-    visual: "/assets/nano/synqora-automation-nano.webp",
-    problem: "Someone moves numbers between sheets, inboxes, and tools every week.",
-    build: "A workflow gathers the information, prepares a clean summary, and flags decisions.",
-    result: "Fewer missed updates and less manual admin.",
+    id: "method",
+    label: "Method",
+    eyebrow: "Method",
+    title: "Clear strategy. Fast build. Practical handoff.",
+    copy: "We understand the goal, shape the simplest useful solution, build it properly, and leave you with a system your team can run.",
+    note: "Discovery, design, build, launch.",
+    tone: "method",
+    align: "left",
   },
   {
-    id: "training",
-    label: "Training",
-    title: "Explain AI to the team",
-    category: "Learn",
-    visual: "/assets/nano/synqora-training-nano.webp",
-    problem: "People have AI tools but do not know what to use them for at work.",
-    build: "Plain English workshops with role examples, reusable prompts, and safety rules.",
-    result: "Your non-technical team leaves with everyday AI workflows they can repeat.",
+    id: "examples",
+    label: "Examples",
+    eyebrow: "Examples",
+    title: "From idea to working product.",
+    copy: "A better website, a smarter enquiry flow, an AI assistant for your team, a private knowledge tool, or an automation that removes repeated work.",
+    note: "Sharper presence. Smarter operations.",
+    tone: "examples",
+    align: "right",
   },
   {
-    id: "website",
-    label: "Launch",
-    title: "Build a useful website or tool",
-    category: "Build",
-    visual: "/assets/nano/synqora-website-tools-nano.webp",
-    problem: "Your offer needs a clearer digital front door or one useful AI feature.",
-    build: "A polished website, quote flow, intake form, dashboard, or simple tool around one job.",
-    result: "Visitors understand the offer and send better enquiries.",
+    id: "answers",
+    label: "Answers",
+    eyebrow: "Plain ownership",
+    title: "Built with taste, clarity, and ownership.",
+    copy: "You know what is being built, how it works, what it costs, what data it uses, and how it can grow after launch.",
+    note: "Premium work without vague tech theatre.",
+    tone: "answers",
+    align: "left",
   },
   {
-    id: "voice",
-    label: "Calls and chat",
-    title: "Collect better details before a human replies",
-    category: "Build",
-    visual: "/assets/nano/synqora-voice-chat-nano.webp",
-    problem: "Calls and chats start with the same questions before anyone can help.",
-    build: "A chat or voice intake flow gathers context, asks the right next question, and routes the request.",
-    result: "Your team receives clearer enquiries with the basics already captured.",
+    id: "contact",
+    label: "Contact",
+    eyebrow: "Start a build",
+    title: "Tell us what you want to build.",
+    copy: "Send the website, workflow, or AI idea you have in mind. We will suggest the clearest path to a useful first version.",
+    tone: "contact",
+    align: "right",
   },
 ];
 
-const methodSteps = [
-  {
-    title: "Learn",
-    text: "We explain what AI can and cannot help with in plain English.",
-    output: "Team playbook",
-  },
-  {
-    title: "Choose",
-    text: "We pick one slow, repeated, or confusing task that is worth improving first.",
-    output: "Clear workflow map",
-  },
-  {
-    title: "Build",
-    text: "We create the helper, automation, website, or small tool around that task.",
-    output: "Working first version",
-  },
-  {
-    title: "Use",
-    text: "We hand it over with simple instructions, safety checks, and owner training.",
-    output: "Usable system",
-  },
-];
-
-const examples = [
-  {
-    label: "Service business",
-    title: "Leads stuck in WhatsApp",
-    before: "New enquiries arrive in chats and wait until someone has time to ask follow-up questions.",
-    after: "AI collects the key details, drafts a reply, and sends the right enquiry to the right person.",
-    metric: "Faster first replies",
-    time: "3-5 days",
-  },
-  {
-    label: "Internal knowledge",
-    title: "Team cannot find answers",
-    before: "Policies, notes, and old files are spread across folders, so people keep asking the same questions.",
-    after: "A private helper answers from trusted material and shows the source so people can check it.",
-    metric: "Less folder hunting",
-    time: "About 1 week",
-  },
-  {
-    label: "Operations",
-    title: "Manual reports every week",
-    before: "Someone copies numbers between sheets, tools, and messages just to prepare a weekly update.",
-    after: "The workflow gathers the information, prepares a clean summary, and flags what needs a human decision.",
-    metric: "Hours saved weekly",
-    time: "2-4 days",
-  },
-];
-
-const faqs = [
-  {
-    question: "Is Synqora for technical teams?",
-    answer:
-      "No. The training is built for founders, admins, sales teams, school teams, creators, and service businesses that want AI to feel clear and useful without needing code knowledge.",
-  },
-  {
-    question: "Do you only teach, or do you build too?",
-    answer:
-      "Both. We usually teach first so the team understands the opportunity, then build one practical tool around the work that matters most.",
-  },
-  {
-    question: "What do we get at the end?",
-    answer:
-      "A working first version, simple instructions, safety guidance, and a clear owner inside your team. The goal is something people can actually use after we leave.",
-  },
-  {
-    question: "How long does this take?",
-    answer:
-      "Training can run in 1-2 days. A first useful build can often be ready in 2-7 days, then improved into a fuller system over 2-4 weeks.",
-  },
-  {
-    question: "What about privacy?",
-    answer:
-      "We start by mapping what data is needed, what should stay out, and who can access the tool. Sensitive work gets human approval steps and source visibility.",
-  },
-];
-
-const quickChoices = [
-  "Reply to enquiries faster",
-  "Find answers in documents",
-  "Automate a weekly report",
-  "Teach my team AI basics",
-];
-
-function scrollToTop() {
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
-
-function resetLandingScroll() {
-  if ("scrollRestoration" in window.history) {
-    window.history.scrollRestoration = "manual";
-  }
-
-  if (window.location.hash) {
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
-  }
-
-  const resetTimers = [0, 50, 250, 700, 1200];
-  resetTimers.forEach((delay) => {
-    setTimeout(scrollToTop, delay);
-  });
-}
-
-function scrollToSection(target) {
-  document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function AppShellButton({ children, className = "", ...props }) {
+function EmailLink() {
   return (
-    <button className={`shell-button ${className}`.trim()} type="button" {...props}>
-      {children}
+    <a className="email-link" href={CONTACT_EMAIL_HREF}>
+      {CONTACT_EMAIL}
+    </a>
+  );
+}
+
+function ContactForm() {
+  return (
+    <form
+      className="contact-form"
+      action={CONTACT_EMAIL_HREF}
+      method="post"
+      encType="text/plain"
+      aria-label="Start a Synqora build"
+    >
+      <div className="contact-field-row">
+        <label className="contact-field">
+          <span>Name</span>
+          <input name="name" type="text" autoComplete="name" placeholder="Your name" />
+        </label>
+        <label className="contact-field">
+          <span>Email</span>
+          <input name="email" type="email" autoComplete="email" placeholder="you@company.com" />
+        </label>
+      </div>
+
+      <label className="contact-field">
+        <span>Project type</span>
+        <select name="project">
+          <option>Website</option>
+          <option>AI assistant</option>
+          <option>Automation</option>
+          <option>Internal tool</option>
+        </select>
+      </label>
+
+      <div className="contact-field-row">
+        <label className="contact-field">
+          <span>Budget</span>
+          <input name="budget" type="text" inputMode="text" placeholder="Your range" />
+        </label>
+        <label className="contact-field">
+          <span>Timeline</span>
+          <input name="timeline" type="text" placeholder="When should it launch?" />
+        </label>
+      </div>
+
+      <label className="contact-field">
+        <span>What should we build?</span>
+        <textarea
+          name="message"
+          rows="4"
+          placeholder="A short note about the website, workflow, AI idea, or tool you have in mind."
+        />
+      </label>
+
+      <button className="contact-submit" type="submit">
+        Send enquiry
+      </button>
+    </form>
+  );
+}
+
+function useElementVisibility(targetRef, { rootMargin = "0px", threshold = 0.72 } = {}) {
+  const visibilityStore = useMemo(() => {
+    let visible = true;
+
+    return {
+      getSnapshot: () => visible,
+      subscribe: (notify) => {
+        const element = targetRef.current;
+        if (!element || typeof IntersectionObserver === "undefined") return () => {};
+
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            const nextVisible = entry.isIntersecting;
+            if (visible === nextVisible) return;
+            visible = nextVisible;
+            notify();
+          },
+          { rootMargin, threshold },
+        );
+
+        observer.observe(element);
+        return () => observer.disconnect();
+      },
+    };
+  }, [rootMargin, targetRef, threshold]);
+
+  return useSyncExternalStore(
+    visibilityStore.subscribe,
+    visibilityStore.getSnapshot,
+    () => true,
+  );
+}
+
+function HeroShaderGradient() {
+  const shaderRef = useRef(null);
+  const shaderActive = useElementVisibility(shaderRef);
+
+  return (
+    <div className="hero-shader-backdrop" aria-hidden="true" ref={shaderRef}>
+      <div className="hero-shader-fallback" />
+      {shaderActive ? (
+        <Suspense fallback={null}>
+          <LazyShaderGradientCanvas
+            className="hero-shader-canvas"
+            fov={45}
+            lazyLoad
+            pixelDensity={1}
+            pointerEvents="none"
+            powerPreference="high-performance"
+            preserveDrawingBuffer={false}
+            rootMargin="240px"
+          >
+            <LazyShaderGradient
+              animate={shaderActive ? "on" : "off"}
+              axesHelper="off"
+              brightness={1.2}
+              cAzimuthAngle={180}
+              cDistance={3.6}
+              cPolarAngle={90}
+              cameraZoom={1}
+              color1="#ff5005"
+              color2="#dbba95"
+              color3="#d0bce1"
+              control="props"
+              destination="onCanvas"
+              embedMode="off"
+              envPreset="city"
+              format="gif"
+              frameRate={10}
+              gizmoHelper="hide"
+              grain="off"
+              lightType="3d"
+              positionX={-1.4}
+              positionY={0}
+              positionZ={0}
+              range="disabled"
+              rangeEnd={40}
+              rangeStart={0}
+              reflection={0.1}
+              rotationX={0}
+              rotationY={10}
+              rotationZ={50}
+              shader="defaults"
+              type="plane"
+              uAmplitude={1}
+              uDensity={1.3}
+              uFrequency={5.5}
+              uSpeed={0.4}
+              uStrength={4}
+              uTime={0}
+              wireframe={false}
+            />
+          </LazyShaderGradientCanvas>
+        </Suspense>
+      ) : null}
+      <div className="hero-shader-tint" />
+    </div>
+  );
+}
+
+function DepthMotionField({ align, tone }) {
+  return (
+    <div className="depth-motion-field" data-depth-align={align} data-depth-tone={tone} aria-hidden="true">
+      <div className="depth-motion-orbit">
+        <span className="depth-motion-plane depth-motion-plane-primary" />
+        <span className="depth-motion-plane depth-motion-plane-secondary" />
+        <span className="depth-motion-plane depth-motion-plane-tertiary" />
+        <span className="depth-motion-node depth-motion-node-one" />
+        <span className="depth-motion-node depth-motion-node-two" />
+      </div>
+    </div>
+  );
+}
+
+function TextScreen({ screen, index }) {
+  const titleId = `${screen.id}-title`;
+  const Heading = index === 0 ? "h1" : "h2";
+
+  return (
+    <section
+      className={`text-screen screen-gradient screen-gradient-${screen.tone}`}
+      data-align={screen.align}
+      id={screen.id}
+      aria-labelledby={titleId}
+    >
+      {index === 0 ? <HeroShaderGradient /> : null}
+      <DepthMotionField align={screen.align} tone={screen.tone} />
+      <div className="screen-ambient" aria-hidden="true" />
+      {screen.id === "contact" ? <ContactForm /> : null}
+      <div className="screen-copy">
+        <p className="screen-eyebrow">{screen.eyebrow}</p>
+        <Heading className="screen-title" id={titleId}>
+          {screen.title}
+        </Heading>
+        <p className="screen-copy-line">{screen.copy}</p>
+        {screen.note ? (
+          <p className="screen-note">{screen.note === CONTACT_EMAIL ? <EmailLink /> : screen.note}</p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function SitePet() {
+  const petRef = useRef(null);
+
+  const petCompanion = () => {
+    const pet = petRef.current;
+    if (!pet) return;
+
+    pet.dataset.petState = "petted";
+  };
+
+  useEffect(() => {
+    const pet = petRef.current;
+    if (!pet) return undefined;
+
+    let movementTimer = 0;
+    let stateTimer = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let targetIndex = 0;
+    let activePetAlign = "center";
+    let activeFooterLift = 0;
+    let footerIsVisible = false;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const crowdFooter = document.querySelector(".site-crowd-footer");
+    const crowdCanvasWrap = crowdFooter?.querySelector(".crowd-canvas-wrap");
+
+    const getPetAvoidSide = () => (activePetAlign === "left" || activePetAlign === "right" ? activePetAlign : "none");
+    const getPetSafeSide = () => (activePetAlign === "right" ? "left" : "right");
+    const getPetFooterState = () => (activeFooterLift > 0 ? "above-crowd" : "clear");
+    const isMobileFooterMode = () => footerIsVisible && activeFooterLift > 0 && window.innerWidth <= 760;
+
+    const setPosition = (x, y, state = "roaming") => {
+      if (state === "roaming") {
+        const dx = x - lastX;
+        const dy = y - lastY;
+        pet.dataset.petDirection = Math.abs(dx) >= Math.abs(dy)
+          ? dx >= 0 ? "right" : "left"
+          : dy >= 0 ? "down" : "up";
+      }
+      pet.style.setProperty("--pet-x", `${Math.round(x)}px`);
+      pet.style.setProperty("--pet-y", `${Math.round(y)}px`);
+      pet.dataset.petAvoid = getPetAvoidSide();
+      pet.dataset.petFooter = getPetFooterState();
+      pet.dataset.petState = state;
+      lastX = x;
+      lastY = y;
+    };
+
+    const getBounds = () => {
+      const size = pet.offsetWidth || 78;
+      const pad = Math.max(16, Math.min(window.innerWidth, window.innerHeight) * 0.02);
+      const maxY = window.innerHeight - size - pad - activeFooterLift;
+      return {
+        maxX: Math.max(pad, window.innerWidth - size - pad),
+        maxY: Math.max(pad, maxY),
+        minX: pad,
+      };
+    };
+
+    const edgeTargets = (bounds, side = getPetSafeSide()) => {
+      const travel = bounds.maxX - bounds.minX;
+      const size = pet.offsetWidth || 78;
+
+      if (isMobileFooterMode()) {
+        const centerX = Math.round(window.innerWidth / 2 - size / 2);
+        return [
+          { x: centerX, y: bounds.maxY },
+          { x: Math.max(bounds.minX, centerX - 26), y: bounds.maxY },
+          { x: Math.min(bounds.maxX, centerX + 26), y: bounds.maxY },
+        ];
+      }
+
+      const safeMinX = Math.round(bounds.maxX - travel * 0.34);
+      const safeMaxX = Math.round(bounds.minX + travel * 0.34);
+
+      if (side === "left") {
+        return [
+          { x: bounds.minX, y: bounds.maxY },
+          { x: Math.round(bounds.minX + travel * 0.14), y: bounds.maxY },
+          { x: safeMaxX, y: bounds.maxY },
+          { x: Math.round(bounds.minX + travel * 0.24), y: bounds.maxY },
+        ];
+      }
+
+      return [
+        { x: bounds.maxX, y: bounds.maxY },
+        { x: Math.round(bounds.maxX - travel * 0.14), y: bounds.maxY },
+        { x: safeMinX, y: bounds.maxY },
+        { x: Math.round(bounds.maxX - travel * 0.24), y: bounds.maxY },
+      ];
+    };
+
+    const settleHome = () => {
+      const bounds = getBounds();
+      const size = pet.offsetWidth || 78;
+      const homeX = isMobileFooterMode()
+        ? Math.round(window.innerWidth / 2 - size / 2)
+        : getPetSafeSide() === "left" ? bounds.minX : bounds.maxX;
+      setPosition(homeX, bounds.maxY, "idle");
+    };
+
+    const roam = () => {
+      const bounds = getBounds();
+      const targets = edgeTargets(bounds, getPetSafeSide());
+      targetIndex = (targetIndex + 1) % targets.length;
+      const { x, y } = targets[targetIndex];
+      window.clearTimeout(stateTimer);
+      setPosition(x, y, "roaming");
+      stateTimer = window.setTimeout(() => {
+        if (pet.dataset.petState === "roaming") {
+          pet.dataset.petState = Math.random() > 0.78 ? "sleeping" : "idle";
+        }
+      }, 1750);
+    };
+
+    const setActivePetAlign = (align) => {
+      if (activePetAlign === align) return;
+      activePetAlign = align;
+      targetIndex = 0;
+      settleHome();
+    };
+
+    const readFooterLift = () => {
+      if (!footerIsVisible) return 0;
+
+      const crowdLift = Math.round(crowdCanvasWrap?.offsetHeight || 0);
+      const mobileLift = window.innerWidth <= 760
+        ? Math.round(Math.min(132, Math.max(104, window.innerHeight * 0.14)))
+        : 0;
+
+      return crowdLift + mobileLift;
+    };
+
+    const setActiveFooterLift = (lift) => {
+      const nextLift = Math.max(0, Math.round(lift));
+      if (activeFooterLift === nextLift) return;
+      activeFooterLift = nextLift;
+      pet.dataset.petFooter = getPetFooterState();
+      targetIndex = 0;
+      settleHome();
+    };
+
+    const sectionObserver = typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver(
+        (entries) => {
+          const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+          if (visibleEntries.length === 0) return;
+
+          const activeEntry = visibleEntries.reduce((best, entry) => (
+            entry.intersectionRatio > best.intersectionRatio ? entry : best
+          ));
+          setActivePetAlign(activeEntry.target.getAttribute("data-align") || "center");
+        },
+        { threshold: [0.35, 0.6, 0.82] },
+      );
+
+    const footerObserver = typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver(
+        ([entry]) => {
+          footerIsVisible = entry.isIntersecting;
+          setActiveFooterLift(readFooterLift());
+        },
+        { threshold: [0.01, 0.35, 0.65] },
+      );
+
+    if (reducedMotion?.matches) {
+      pet.dataset.petMotion = "reduced";
+      settleHome();
+    } else {
+      pet.dataset.petMotion = "active";
+      settleHome();
+      movementTimer = window.setInterval(roam, 3400);
+    }
+
+    document.querySelectorAll(".text-screen").forEach((section) => sectionObserver?.observe(section));
+    if (crowdFooter) {
+      footerObserver?.observe(crowdFooter);
+    }
+    const handleResize = () => {
+      setActiveFooterLift(readFooterLift());
+      settleHome();
+    };
+    window.addEventListener("resize", handleResize, { passive: true });
+
+    return () => {
+      window.clearInterval(movementTimer);
+      window.clearTimeout(stateTimer);
+      sectionObserver?.disconnect();
+      footerObserver?.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  const handleKeyDown = (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    petCompanion();
+  };
+
+  return (
+    <button
+      className="site-pet"
+      data-pet-clarity="high"
+      data-pet-direction="right"
+      data-pet-motion="active"
+      data-pet-avoid="none"
+      data-pet-footer="clear"
+      data-pet-state="idle"
+      data-site-pet-source="derDere/site-pet"
+      type="button"
+      aria-label="Pet Synqora site companion"
+      onClick={petCompanion}
+      onKeyDown={handleKeyDown}
+      ref={petRef}
+    >
+      <span className="site-pet-sprite" aria-hidden="true" />
     </button>
   );
 }
 
-function CursorFollower() {
-  const followerRef = useRef(null);
-  const dotRefs = useRef([]);
-  const rafRef = useRef(0);
-  const pointerRef = useRef({ x: 0, y: 0 });
-  const currentRef = useRef({ x: 0, y: 0 });
-  const cursorTrailHistoryRef = useRef([]);
-  const trailsRef = useRef(
-    Array.from({ length: 4 }, () => ({ x: 0, y: 0 })),
-  );
-  const hasMovedRef = useRef(false);
+function CrowdCanvas({ src = "/images/peeps/all-peeps.png", rows = 15, cols = 7 }) {
+  const canvasRef = useRef(null);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const finePointer = window.matchMedia("(pointer: fine)");
-    const follower = followerRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return undefined;
 
-    if (!follower || prefersReduced.matches || !finePointer.matches) {
-      return undefined;
-    }
+    const stage = { width: 0, height: 0, dpr: 1 };
+    const sprite = new Image();
+    const peeps = [];
+    const frameRef = { current: 0 };
+    const visibleRef = { current: true };
+    let disposed = false;
+    let spriteReady = false;
+    let lastTime = 0;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const colors = ["#111316", "#ff5005", "#7d5ee6", "#16a6b7", "#f4c65f", "#d75982"];
 
-    function animate() {
-      const current = currentRef.current;
-      const target = pointerRef.current;
-      current.x += (target.x - current.x) * 0.34;
-      current.y += (target.y - current.y) * 0.34;
-      follower.style.transform = `translate3d(${current.x - 5}px, ${current.y - 4}px, 0)`;
+    const randomRange = (min, max) => min + Math.random() * (max - min);
+    const easeIn = (value) => value * value;
 
-      const history = cursorTrailHistoryRef.current;
-      history.unshift({ x: current.x, y: current.y });
-      if (history.length > 42) {
-        history.length = 42;
+    const resetPeep = (peep, distribute = false) => {
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const displayWidth = peep.width * peep.displayScale;
+      const displayHeight = peep.height * peep.displayScale;
+      const offsetY = 12 + 54 * easeIn(Math.random());
+
+      peep.scaleX = direction;
+      peep.speed = randomRange(70, 160) * direction;
+      peep.y = stage.height - displayHeight + offsetY;
+      peep.anchorY = peep.y + displayHeight;
+      peep.x = distribute
+        ? randomRange(-displayWidth, stage.width + displayWidth)
+        : direction > 0
+          ? -displayWidth
+          : stage.width + displayWidth;
+      peep.phase = randomRange(0, Math.PI * 2);
+    };
+
+    const createPeeps = () => {
+      peeps.length = 0;
+      const total = rows * cols;
+      const rectWidth = spriteReady ? sprite.naturalWidth / rows : 44;
+      const rectHeight = spriteReady ? sprite.naturalHeight / cols : 82;
+
+      for (let index = 0; index < total; index += 1) {
+        const peep = spriteReady
+          ? {
+            image: sprite,
+            rect: [
+              (index % rows) * rectWidth,
+              Math.floor(index / rows) * rectHeight,
+              rectWidth,
+              rectHeight,
+            ],
+            width: rectWidth,
+            height: rectHeight,
+            displayScale: randomRange(0.34, 0.56),
+          }
+          : {
+            fallback: true,
+            width: 44,
+            height: 82,
+            displayScale: randomRange(0.72, 1.12),
+            fill: colors[Math.floor(randomRange(0, colors.length))],
+            detail: colors[Math.floor(randomRange(0, colors.length))],
+            radius: randomRange(5, 9),
+          };
+
+        resetPeep(peep, true);
+        peeps.push(peep);
       }
+    };
 
-      trailsRef.current.forEach((trail, index) => {
-        const cursorTrailLag = 5 + index * 6;
-        const cursorTrailBackOffset = 14 + index * 7;
-        const historyPoint = history[Math.min(cursorTrailLag, history.length - 1)] ?? current;
-        const previousPoint = history[Math.min(cursorTrailLag + 2, history.length - 1)] ?? historyPoint;
-        const velocityX = historyPoint.x - previousPoint.x;
-        const velocityY = historyPoint.y - previousPoint.y;
-        const distance = Math.hypot(velocityX, velocityY) || 1;
-        const source = {
-          x: historyPoint.x - (velocityX / distance) * cursorTrailBackOffset,
-          y: historyPoint.y - (velocityY / distance) * cursorTrailBackOffset,
-        };
-        trail.x += (source.x - trail.x) * (0.24 - index * 0.025);
-        trail.y += (source.y - trail.y) * (0.24 - index * 0.025);
-        const dot = dotRefs.current[index];
-        if (dot) {
-          dot.style.transform = `translate3d(${trail.x - 5}px, ${trail.y - 5}px, 0)`;
+    const drawFallbackPeep = (peep, time) => {
+      const bob = Math.sin(time * 0.007 + peep.phase) * 5;
+      const headY = -peep.height + peep.radius * 1.4;
+
+      context.save();
+      context.translate(peep.x, peep.y + peep.height + bob);
+      context.scale(peep.scaleX * peep.displayScale, peep.displayScale);
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      context.fillStyle = peep.fill;
+      context.beginPath();
+      context.roundRect(-peep.width / 2, -peep.height * 0.72, peep.width, peep.height * 0.62, peep.width * 0.42);
+      context.fill();
+
+      context.strokeStyle = peep.fill;
+      context.lineWidth = Math.max(3, peep.width * 0.16);
+      context.beginPath();
+      context.moveTo(-peep.width * 0.24, -peep.height * 0.12);
+      context.lineTo(-peep.width * 0.34, 0);
+      context.moveTo(peep.width * 0.2, -peep.height * 0.12);
+      context.lineTo(peep.width * 0.34, 0);
+      context.stroke();
+
+      context.fillStyle = "#f5d0ba";
+      context.beginPath();
+      context.arc(0, headY, peep.radius, 0, Math.PI * 2);
+      context.fill();
+
+      context.fillStyle = peep.detail;
+      context.beginPath();
+      context.arc(-peep.radius * 0.12, headY - peep.radius * 0.72, peep.radius * 0.92, Math.PI, Math.PI * 2);
+      context.fill();
+      context.restore();
+    };
+
+    const drawSpritePeep = (peep, time) => {
+      const bob = Math.sin(time * 0.007 + peep.phase) * 6;
+
+      context.save();
+      context.translate(peep.x, peep.y + bob);
+      context.scale(peep.scaleX * peep.displayScale, peep.displayScale);
+      context.drawImage(
+        peep.image,
+        peep.rect[0],
+        peep.rect[1],
+        peep.rect[2],
+        peep.rect[3],
+        0,
+        0,
+        peep.width,
+        peep.height,
+      );
+      context.restore();
+    };
+
+    const paint = (time = 0, advance = true, delta = 16) => {
+      context.setTransform(stage.dpr, 0, 0, stage.dpr, 0, 0);
+      context.clearRect(0, 0, stage.width, stage.height);
+      context.imageSmoothingEnabled = true;
+      peeps.sort((a, b) => a.anchorY - b.anchorY);
+
+      for (const peep of peeps) {
+        if (advance && !reducedMotion?.matches) {
+          const displayWidth = peep.width * peep.displayScale;
+          peep.x += peep.speed * (delta / 1000);
+          if (peep.speed > 0 && peep.x > stage.width + displayWidth) resetPeep(peep);
+          if (peep.speed < 0 && peep.x < -displayWidth) resetPeep(peep);
         }
-      });
 
-      rafRef.current = requestAnimationFrame(animate);
-    }
-
-    function handlePointerMove(event) {
-      pointerRef.current = { x: event.clientX, y: event.clientY };
-      if (!hasMovedRef.current) {
-        currentRef.current = { ...pointerRef.current };
-        cursorTrailHistoryRef.current = Array.from({ length: 42 }, () => ({ ...pointerRef.current }));
-        trailsRef.current = trailsRef.current.map(() => ({ ...pointerRef.current }));
-        hasMovedRef.current = true;
+        if (peep.fallback) drawFallbackPeep(peep, time);
+        else drawSpritePeep(peep, time);
       }
-      follower.classList.add("is-visible");
-      dotRefs.current.forEach((dot) => dot?.classList.add("is-visible"));
-    }
+    };
 
-    function handlePointerOver(event) {
-      const target = event.target;
-      if (target instanceof Element && target.closest("button, a, input, textarea, select, summary, .problem-card, .example-card")) {
-        follower.classList.add("is-active");
-        dotRefs.current.forEach((dot) => dot?.classList.add("is-active"));
+    const tick = (time) => {
+      if (!visibleRef.current || reducedMotion?.matches) {
+        frameRef.current = 0;
+        paint(time, false);
+        return;
       }
-    }
+      const delta = lastTime ? Math.min(48, time - lastTime) : 16;
+      lastTime = time;
+      paint(time, true, delta);
+      frameRef.current = window.requestAnimationFrame(tick);
+    };
 
-    function handlePointerOut(event) {
-      const target = event.target;
-      if (target instanceof Element && target.closest("button, a, input, textarea, select, summary, .problem-card, .example-card")) {
-        follower.classList.remove("is-active");
-        dotRefs.current.forEach((dot) => dot?.classList.remove("is-active"));
+    const start = () => {
+      if (frameRef.current || reducedMotion?.matches) {
+        paint(performance.now(), false);
+        return;
       }
-    }
+      frameRef.current = window.requestAnimationFrame(tick);
+    };
 
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("pointerover", handlePointerOver, { passive: true });
-    window.addEventListener("pointerout", handlePointerOut, { passive: true });
-    rafRef.current = requestAnimationFrame(animate);
+    const stop = () => {
+      if (!frameRef.current) return;
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    };
+
+    const resize = () => {
+      stage.width = canvas.clientWidth;
+      stage.height = canvas.clientHeight;
+      stage.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(stage.width * stage.dpr));
+      canvas.height = Math.max(1, Math.round(stage.height * stage.dpr));
+      if (spriteReady || peeps.length > 0) createPeeps();
+      paint(performance.now(), false);
+      start();
+    };
+
+    const visibilityObserver = typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver(
+        ([entry]) => {
+          visibleRef.current = entry.isIntersecting;
+          if (entry.isIntersecting) start();
+          else stop();
+        },
+        { rootMargin: "180px 0px", threshold: 0.01 },
+      );
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
+    resizeObserver?.observe(canvas);
+    visibilityObserver?.observe(canvas);
+    resize();
+
+    sprite.onload = () => {
+      if (disposed) return;
+      spriteReady = true;
+      createPeeps();
+      paint(performance.now(), false);
+      start();
+    };
+    sprite.onerror = () => {
+      if (disposed) return;
+      spriteReady = false;
+      createPeeps();
+      paint(performance.now(), false);
+      start();
+    };
+    sprite.decoding = "async";
+    sprite.src = src;
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerover", handlePointerOver);
-      window.removeEventListener("pointerout", handlePointerOut);
+      disposed = true;
+      stop();
+      resizeObserver?.disconnect();
+      visibilityObserver?.disconnect();
     };
-  }, []);
+  }, [cols, rows, src]);
 
-  return (
-    <>
-      <div className="cursor-follower" ref={followerRef} aria-hidden="true">
-        <svg className="cursor-arrow" viewBox="0 0 38 38" focusable="false">
-          <path d="M5 4L31 18L19 21L15 34L5 4Z" />
-        </svg>
-      </div>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <span
-          className={`cursor-trail-dot cursor-trail-dot-${index + 1}`}
-          key={index}
-          ref={(node) => {
-            dotRefs.current[index] = node;
-          }}
-          aria-hidden="true"
-        />
-      ))}
-    </>
-  );
+  return <canvas className="crowd-canvas" data-crowd-source={src} ref={canvasRef} />;
 }
 
-function AnimatedShape({ tone = "green", label = "AI workflow motion" }) {
+function CrowdFooter() {
   return (
-    <div className={`animated-shape animated-shape-${tone}`} aria-label={label}>
-      <span className="shape-orbit" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </span>
-      <span className="shape-core" aria-hidden="true" />
-    </div>
-  );
-}
-
-function KineticSpark() {
-  return (
-    <svg className="kinetic-spark" viewBox="0 0 180 180" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="sparkGradient" x1="18" x2="154" y1="20" y2="154" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0cff62" />
-          <stop offset="0.48" stopColor="#38dff7" />
-          <stop offset="1" stopColor="#ff7ad9" />
-        </linearGradient>
-      </defs>
-      <path d="M84 8c22 34 34 46 84 42-34 22-46 34-42 84-22-34-34-46-84-42 34-22 46-34 42-84Z" fill="url(#sparkGradient)" />
-      <path d="M63 47c18 18 32 24 60 18-18 18-24 32-18 60-18-18-32-24-60-18 18-18 24-32 18-60Z" fill="rgba(255,252,225,0.28)" />
-    </svg>
-  );
-}
-
-function MorphingHeroMark() {
-  return (
-    <div className="hero-morph-mark" aria-hidden="true">
-      <svg viewBox="0 0 240 240" focusable="false">
-        <defs>
-          <linearGradient id="morphGradient" x1="36" x2="204" y1="32" y2="208" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#0cff62" />
-            <stop offset="0.48" stopColor="#38dff7" />
-            <stop offset="1" stopColor="#7d4cff" />
-          </linearGradient>
-          <filter id="morphGlow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="7" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="0 0 0 0 0.05 0 0 0 0 1 0 0 0 0 0.38 0 0 0 0.72 0"
-              result="glow"
-            />
-            <feMerge>
-              <feMergeNode in="glow" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <g className="hero-morph-targets">
-          <path
-            className="hero-morph-target hero-morph-target-learn"
-            d="M120 18 C138 76 164 102 222 120 C164 138 138 164 120 222 C102 164 76 138 18 120 C76 102 102 76 120 18Z"
-          />
-          <path
-            className="hero-morph-target hero-morph-target-build"
-            d="M62 38 C90 20 150 20 178 38 C204 56 220 88 220 120 C220 152 204 184 178 202 C150 220 90 220 62 202 C36 184 20 152 20 120 C20 88 36 56 62 38Z"
-          />
-          <path
-            className="hero-morph-target hero-morph-target-use"
-            d="M120 24 C160 24 172 70 206 84 C236 96 228 150 196 164 C164 178 162 218 120 218 C78 218 76 178 44 164 C12 150 4 96 34 84 C68 70 80 24 120 24Z"
-          />
-        </g>
-        <path
-          className="hero-morph-shape"
-          d="M120 18 C138 76 164 102 222 120 C164 138 138 164 120 222 C102 164 76 138 18 120 C76 102 102 76 120 18Z"
-          fill="url(#morphGradient)"
-          filter="url(#morphGlow)"
-        />
-        <path
-          className="hero-morph-ring"
-          d="M42 120 C42 68 68 42 120 42 C172 42 198 68 198 120 C198 172 172 198 120 198 C68 198 42 172 42 120Z"
-        />
-        <circle className="hero-morph-node hero-morph-node-one" cx="53" cy="92" r="6" />
-        <circle className="hero-morph-node hero-morph-node-two" cx="180" cy="76" r="5" />
-        <circle className="hero-morph-node hero-morph-node-three" cx="188" cy="162" r="7" />
-      </svg>
-      <div className="hero-morph-label">
-        <span>Learn</span>
-        <span>Build</span>
-        <span>Use</span>
+    <footer className="site-crowd-footer" aria-labelledby="crowd-footer-title">
+      <div className="crowd-footer-copy">
+        <h2 className="crowd-footer-title" id="crowd-footer-title">
+          <span>Stay extraordinary.</span>
+          <span>Don't be the same.</span>
+        </h2>
       </div>
-    </div>
-  );
-}
-
-function KineticHero({ onStart }) {
-  return (
-    <section className="kinetic-hero hero-mega" aria-labelledby="hero-title">
-      <div className="hero-background-grid" aria-hidden="true" />
-      <img
-        className="hero-ambient-image"
-        src="/assets/nano/synqora-hero-nano.webp"
-        alt=""
-        aria-hidden="true"
-      />
-      <span className="motion-orb motion-orb-one" aria-hidden="true" />
-      <span className="motion-orb motion-orb-two" aria-hidden="true" />
-      <span className="motion-orb motion-orb-three" aria-hidden="true" />
-      <KineticSpark />
-      <MorphingHeroMark />
-      <div className="hero-mega-inner">
-        <p className="section-kicker hero-kicker">AI help for non-technical teams</p>
-        <h1 id="hero-title" className="hero-title" aria-label="Make AI feel useful.">
-          <span className="hero-line">
-            <span className="hero-word" data-motion-word="Make">Make</span>
-            <span className="hero-word" data-motion-word="AI">AI</span>
-          </span>
-          <span className="hero-line hero-line-offset hero-line-middle">
-            <span className="hero-word" data-motion-word="feel">feel</span>
-          </span>
-          <span className="hero-line hero-line-offset hero-line-final">
-            <span className="hero-word" data-motion-word="useful">useful.</span>
-          </span>
-        </h1>
-
-        <div className="hero-bottom-row">
-          <p className="hero-brace-copy">
-            <span>{`{`}</span>
-            Learn what AI can do, then build one tool your team actually uses.
-            <span>{`}`}</span>
-          </p>
-          <div className="hero-action-deck">
-            <div className="hero-actions">
-              <button className="acid-pill" type="button" onClick={onStart}>
-                Tell us what you need
-              </button>
-              <button className="ghost-pill secondary-action" type="button" onClick={() => scrollToSection("services")}>
-                See what we can build
-              </button>
-            </div>
-            <div className="hero-method-capsule" aria-label="Synqora method preview">
-              <span>Learn the team</span>
-              <span>Choose one task</span>
-              <span>Ship a usable tool</span>
-            </div>
-          </div>
-        </div>
+      <div className="crowd-canvas-wrap" aria-hidden="true">
+        <CrowdCanvas src="/images/peeps/all-peeps.png" rows={15} cols={7} />
       </div>
-    </section>
-  );
-}
-
-function PainPointChooser({ activeId, onSelect }) {
-  const active = painPoints.find((item) => item.id === activeId) ?? painPoints[0];
-
-  return (
-    <section className="site-section reveal-block" id="services" aria-labelledby="services-title">
-      <div className="section-heading">
-        <p className="section-kicker">What can we help with?</p>
-        <h2 id="services-title">Start with one painful task.</h2>
-        <p>
-          You do not need to know what to build. Pick the work that feels slow, repeated,
-          or unclear. Synqora turns that into a practical AI training or tool plan.
-        </p>
-      </div>
-
-      <div className="pain-point-chooser service-rail">
-        <div className="pain-tabs" role="tablist" aria-label="Choose a Synqora goal">
-          {painPoints.map((item) => (
-            <button
-              key={item.id}
-              className={item.id === active.id ? "pain-tab service-rail-card is-active" : "pain-tab service-rail-card"}
-              type="button"
-              role="tab"
-              aria-selected={item.id === active.id}
-              aria-controls="pain-panel"
-              onClick={() => onSelect(item.id)}
-            >
-              <span>{item.label}</span>
-              <strong>{item.title}</strong>
-            </button>
-          ))}
-        </div>
-
-        <article className="pain-panel" id="pain-panel">
-          <div className="pain-panel-image">
-            <img src={active.visual} alt={`${active.title} visual`} />
-          </div>
-          <div className="pain-panel-copy">
-            <p className="section-kicker">{active.category}</p>
-            <h3>{active.title}</h3>
-            <dl>
-              <div>
-                <dt>Problem</dt>
-                <dd>{active.problem}</dd>
-              </div>
-              <div>
-                <dt>Synqora builds</dt>
-                <dd>{active.build}</dd>
-              </div>
-              <div>
-                <dt>Result</dt>
-                <dd>{active.result}</dd>
-              </div>
-            </dl>
-            <button className="ghost-pill" type="button" onClick={() => scrollToSection("contact")}>
-              Plan this
-            </button>
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function ProblemOutcomeCard({ item }) {
-  return (
-    <article className="problem-card">
-      <div>
-        <p className="card-label">{item.category}</p>
-        <h3>{item.title}</h3>
-        <p className="card-intro">{item.problem}</p>
-      </div>
-      <div className="card-outcome">
-        <span>Result</span>
-        <p>{item.result}</p>
-      </div>
-      <button className="card-link" type="button" onClick={() => scrollToSection("contact")}>
-        Tell us about this
-      </button>
-    </article>
-  );
-}
-
-function ProblemOutcomeSection() {
-  return (
-    <section className="site-section reveal-block" aria-labelledby="problem-title">
-      <div className="section-marquee" aria-hidden="true">
-        <span>Useful AI. Plain English. One real workflow. Useful AI. Plain English.</span>
-      </div>
-      <div className="section-heading compact">
-        <p className="section-kicker">Simple offers</p>
-        <h2 id="problem-title">AI work explained by the problem it solves.</h2>
-      </div>
-      <div className="problem-grid">
-        {painPoints.slice(0, 5).map((item) => (
-          <ProblemOutcomeCard key={item.id} item={item} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function MethodStrip() {
-  return (
-    <section className="site-section reveal-block" id="method" aria-labelledby="method-title">
-      <div className="method-strip">
-        <div className="method-intro">
-          <p className="section-kicker">How we work</p>
-          <h2 id="method-title">Teach first. Build beside you. Leave it working.</h2>
-          <p>
-            Synqora is not slide-deck only. We help your team understand AI, pick the right
-            first use case, and ship a tool with clear instructions.
-          </p>
-        </div>
-        <div className="method-route" aria-hidden="true">
-          <svg viewBox="0 0 1000 180" role="img">
-            <path
-              className="method-route-path"
-              d="M54 126 C178 30 282 34 394 96 S614 166 732 74 S908 34 946 112"
-            />
-            {methodSteps.map((step, index) => {
-              const points = [
-                { x: 54, y: 126 },
-                { x: 394, y: 96 },
-                { x: 732, y: 74 },
-                { x: 946, y: 112 },
-              ];
-              const point = points[index];
-              return (
-                <g
-                  className="method-route-waypoint"
-                  key={step.title}
-                  transform={`translate(${point.x} ${point.y})`}
-                >
-                  <circle r="18" />
-                  <text y="5" textAnchor="middle">
-                    {String(index + 1).padStart(2, "0")}
-                  </text>
-                </g>
-              );
-            })}
-            <circle className="method-route-dot" r="9" />
-          </svg>
-        </div>
-        <div className="method-steps">
-          {methodSteps.map((step, index) => (
-            <article className="method-step" key={step.title}>
-              <span className="method-step-index">{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </div>
-              <span className="method-output">{step.output}</span>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ExampleTransformations() {
-  return (
-    <section className="site-section reveal-block" id="examples" aria-labelledby="examples-title">
-      <div className="section-heading">
-        <p className="section-kicker">Examples</p>
-        <h2 id="examples-title">Real work turned into simple tools.</h2>
-        <p>
-          The best first AI project is usually one messy daily task. These are the kinds
-          of problems Synqora can make clearer.
-        </p>
-      </div>
-      <div className="example-grid">
-        {examples.map((example) => (
-          <article className="example-card" key={example.title}>
-            <p className="card-label">{example.label}</p>
-            <h3>{example.title}</h3>
-            <div className="before-after">
-              <div>
-                <span>Before</span>
-                <p>{example.before}</p>
-              </div>
-              <div>
-                <span>After</span>
-                <p>{example.after}</p>
-              </div>
-            </div>
-            <footer>
-              <strong>{example.metric}</strong>
-              <span>{example.time}</span>
-            </footer>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FaqSection({ openIndex, onToggle }) {
-  return (
-    <section className="site-section reveal-block faq-section" id="faq" aria-labelledby="faq-title">
-      <div className="section-heading compact">
-        <p className="section-kicker">Plain answers</p>
-        <h2 id="faq-title">Questions people ask before starting.</h2>
-      </div>
-      <div className="faq-list">
-        {faqs.map((faq, index) => (
-          <details
-            key={faq.question}
-            open={openIndex === index}
-            onToggle={(event) => {
-              if (event.currentTarget.open) {
-                onToggle(index);
-              }
-            }}
-          >
-            <summary>
-              <span>{faq.question}</span>
-              <b aria-hidden="true">+</b>
-            </summary>
-            <p>{faq.answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ContactBrief({ selectedTitle, status, onSubmit, onQuickChoice }) {
-  return (
-    <section className="site-section reveal-block contact-section" id="contact" aria-labelledby="contact-title">
-      <div className="contact-brief">
-        <div className="contact-copy">
-          <p className="section-kicker">Start with the work</p>
-          <h2 id="contact-title">Tell Synqora what feels slow, repeated, or unclear.</h2>
-          <p>
-            You do not need a technical idea. Share the work that takes too long, who handles
-            it now, and the tools your team already uses.
-          </p>
-          <div className="contact-note">
-            <span>Best first brief</span>
-            <strong>{selectedTitle}</strong>
-          </div>
-        </div>
-
-        <form className="brief-form" onSubmit={onSubmit}>
-          <div className="brief-form-header">
-            <span>Synqora brief</span>
-            <strong>{status}</strong>
-          </div>
-          <div className="quick-choice-row" aria-label="Quick choices">
-            {quickChoices.map((choice) => (
-              <button key={choice} type="button" onClick={() => onQuickChoice(choice)}>
-                {choice}
-              </button>
-            ))}
-          </div>
-
-          <label>
-            <span>Name</span>
-            <input name="name" placeholder="Your name" autoComplete="name" required />
-          </label>
-
-          <label>
-            <span>What work takes too much time?</span>
-            <textarea
-              name="slowWork"
-              rows="5"
-              placeholder="Example: replying to enquiries, preparing weekly reports, finding answers in documents..."
-              required
-            />
-          </label>
-
-          <div className="brief-form-grid">
-            <label>
-              <span>Who does this work now?</span>
-              <input name="owner" placeholder="Founder, admin, sales..." />
-            </label>
-            <label>
-              <span>What tools do you already use?</span>
-              <input name="tools" placeholder="WhatsApp, Gmail, Sheets..." />
-            </label>
-          </div>
-
-          <label>
-            <span>What do you want first?</span>
-            <select name="firstStep" defaultValue="Teach us what to use">
-              <option>Teach us what to use</option>
-              <option>Build a small working version</option>
-              <option>Map our workflow first</option>
-              <option>Not sure yet</option>
-            </select>
-          </label>
-
-          <button className="acid-pill form-submit" type="submit">
-            Tell us what you need
-          </button>
-        </form>
-      </div>
-    </section>
-  );
-}
-
-function SplitFooterWord({ word }) {
-  return (
-    <span className="footer-split-word" aria-label={word}>
-      {word.split("").map((char, index) => (
-        <span className="footer-split-char" aria-hidden="true" key={`${char}-${index}`}>
-          {char}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function SplitFooter() {
-  return (
-    <footer className="split-footer">
-      <div className="footer-poster">
-        <p className="footer-poster-line">
-          <SplitFooterWord word="Learn" />
-          <SplitFooterWord word="Build" />
-          <SplitFooterWord word="Use" />
-        </p>
-      </div>
-      <div className="footer-meta">
-        <div>
-          <img src="/assets/brand/synqora-gradient-wordmark.svg" alt="Synqora" />
-          <p>AI training and useful tools for people who want AI to feel clear.</p>
-        </div>
-        <nav aria-label="Footer navigation">
-          {navItems.map((item) => (
-            <button type="button" key={item.target} onClick={() => scrollToSection(item.target)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <a href="mailto:hello@synqora.ai">hello@synqora.ai</a>
-      </div>
+      <p className="crowd-footer-email">
+        <EmailLink />
+      </p>
     </footer>
   );
 }
 
 export function App() {
-  const rootRef = useRef(null);
-  const gsapScaleHero = true;
-  const [activeId, setActiveId] = useState("reply");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [faqOpen, setFaqOpen] = useState(0);
-  const [briefStatus, setBriefStatus] = useState("New request");
-
-  const activePoint = useMemo(
-    () => painPoints.find((item) => item.id === activeId) ?? painPoints[0],
-    [activeId],
-  );
-
-  useEffect(() => {
-    resetLandingScroll();
-
-    const handleHashChange = () => resetLandingScroll();
-    const handleLandingRestore = () => resetLandingScroll();
-    window.addEventListener("hashchange", handleHashChange);
-    window.addEventListener("pageshow", handleLandingRestore);
-    window.addEventListener("load", handleLandingRestore);
-
-    return () => {
-      window.removeEventListener("hashchange", handleHashChange);
-      window.removeEventListener("pageshow", handleLandingRestore);
-      window.removeEventListener("load", handleLandingRestore);
-    };
-  }, []);
-
-  useGSAP(() => {
-    const root = rootRef.current;
-    if (!root) return undefined;
-
-    const q = gsap.utils.selector(root);
-    const mm = gsap.matchMedia();
-
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      const heroWords = q(".hero-word");
-      const heroKicker = q(".hero-kicker");
-      const heroBrace = q(".hero-brace-copy");
-      const heroDeck = q(".hero-action-deck");
-      const heroMethodItems = q(".hero-method-capsule span");
-      const heroMorphMark = q(".hero-morph-mark");
-      const heroMorphShape = q(".hero-morph-shape");
-      const heroMorphTargets = q(".hero-morph-target");
-      const heroMorphLabel = q(".hero-morph-label span");
-      const heroMorphNodes = q(".hero-morph-node");
-      const shapeOrbits = q(".shape-orbit");
-      const revealBlocks = q(".reveal-block");
-      const revealChildren = q(".service-rail-card, .problem-card, .method-step, .example-card, .contact-brief");
-      const footerChars = q(".footer-split-char");
-
-      gsap.set(heroWords, { yPercent: 115, rotate: 2, transformOrigin: "0 100%" });
-      gsap.set([heroKicker, heroBrace, heroDeck], { y: 24, autoAlpha: 0 });
-      gsap.set(heroMethodItems, { y: 14, autoAlpha: 0 });
-      gsap.set(heroMorphMark, { scale: 0.78, rotate: -8, autoAlpha: 0, transformOrigin: "50% 50%" });
-      gsap.set(heroMorphLabel, { y: 10, autoAlpha: 0 });
-      gsap.set(revealBlocks, { y: 44, autoAlpha: 0 });
-      gsap.set(revealChildren, { y: 30, autoAlpha: 0 });
-      gsap.set(footerChars, { yPercent: 100, autoAlpha: 0 });
-
-      const heroTl = gsap.timeline({
-        defaults: { duration: 0.82, ease: "power4.out" },
-      });
-
-      heroTl.addLabel("intro", 0);
-      heroTl
-        .to(heroKicker, { y: 0, autoAlpha: 1, duration: 0.48 }, "intro")
-        .to(heroWords, { yPercent: 0, rotate: 0, stagger: 0.075 }, "intro+=0.08")
-        .from(".kinetic-spark", {
-          scale: 0.35,
-          rotate: -48,
-          autoAlpha: 0,
-          duration: 1.05,
-          ease: "elastic.out(1, 0.7)",
-        }, "intro+=0.16");
-      heroTl
-        .to(heroMorphMark, {
-          scale: 1,
-          rotate: 0,
-          autoAlpha: 1,
-          duration: 0.9,
-          ease: "back.out(1.45)",
-        }, "intro+=0.24")
-        .to(heroMorphLabel, {
-          y: 0,
-          autoAlpha: 1,
-          stagger: 0.08,
-          duration: 0.44,
-          ease: "power3.out",
-        }, "intro+=0.46");
-
-      heroTl.addLabel("copy", "-=0.36");
-      heroTl.to(heroBrace, { y: 0, autoAlpha: 1, duration: 0.72, ease: "power3.out" }, "copy");
-
-      heroTl.addLabel("actions", "copy+=0.08");
-      heroTl.to(heroDeck, { y: 0, autoAlpha: 1, duration: 0.72, ease: "power3.out" }, "actions");
-
-      heroTl.addLabel("proof", "actions+=0.12");
-      heroTl.to(heroMethodItems, { y: 0, autoAlpha: 1, stagger: 0.075, duration: 0.48 }, "proof");
-
-      gsap.to(".kinetic-spark", {
-        y: -14,
-        rotate: 10,
-        duration: 4.6,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-
-      if (heroMorphShape.length > 0 && heroMorphTargets.length >= 3) {
-        const morphTl = gsap.timeline({
-          repeat: -1,
-          defaults: { duration: 1.08, ease: "power3.inOut" },
-        });
-
-        morphTl
-          .to(heroMorphShape, {
-            morphSVG: { shape: heroMorphTargets[1], type: "rotational", shapeIndex: 2 },
-            rotate: 7,
-            svgOrigin: "120 120",
-          }, "+=0.52")
-          .to(heroMorphShape, {
-            morphSVG: { shape: heroMorphTargets[2], type: "rotational", shapeIndex: 4 },
-            rotate: -6,
-            svgOrigin: "120 120",
-          }, "+=0.52")
-          .to(heroMorphShape, {
-            morphSVG: { shape: heroMorphTargets[0], type: "rotational", shapeIndex: 0 },
-            rotate: 0,
-            svgOrigin: "120 120",
-          }, "+=0.52");
-      }
-
-      gsap.to(heroMorphNodes, {
-        scale: 1.5,
-        autoAlpha: 0.38,
-        duration: 1.6,
-        repeat: -1,
-        yoyo: true,
-        stagger: 0.22,
-        ease: "sine.inOut",
-        transformOrigin: "50% 50%",
-      });
-
-      gsap.to(".motion-orb", {
-        y: (index) => [-20, 18, -12][index] ?? -16,
-        x: (index) => [12, -18, 10][index] ?? 8,
-        scale: (index) => [1.12, 0.92, 1.08][index] ?? 1,
-        duration: (index) => [5.5, 6.2, 4.8][index] ?? 5,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        stagger: 0.18,
-      });
-
-      if (shapeOrbits.length > 0) {
-        gsap.to(shapeOrbits, {
-          rotate: 360,
-          duration: 22,
-          repeat: -1,
-          ease: "none",
-          transformOrigin: "50% 50%",
-        });
-      }
-
-      gsap.to(".section-marquee span", {
-        xPercent: -32,
-        duration: 18,
-        repeat: -1,
-        ease: "none",
-      });
-
-      gsap.to(".hero-ambient-image", {
-        yPercent: -8,
-        scale: 1.04,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".kinetic-hero",
-          start: "top top",
-          end: "bottom top",
-          scrub: 1,
-        },
-      });
-
-      gsap.to(".method-route-dot", {
-        motionPath: {
-          path: ".method-route-path",
-          align: ".method-route-path",
-          alignOrigin: [0.5, 0.5],
-        },
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".method-strip",
-          start: "top 76%",
-          end: "bottom 30%",
-          scrub: 1,
-        },
-      });
-
-      gsap.fromTo(
-        ".method-route-waypoint",
-        { scale: 0.72, autoAlpha: 0.42, transformOrigin: "50% 50%" },
-        {
-          scale: 1,
-          autoAlpha: 1,
-          stagger: 0.16,
-          duration: 0.42,
-          ease: "back.out(1.8)",
-          scrollTrigger: {
-            trigger: ".method-strip",
-            start: "top 76%",
-            end: "bottom 30%",
-            scrub: 1,
-          },
-        },
-      );
-
-      ScrollTrigger.batch(revealBlocks, {
-        start: "top 82%",
-        once: true,
-        onEnter: (batch) => {
-          gsap.to(batch, {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.82,
-            stagger: 0.08,
-            ease: "power3.out",
-            overwrite: true,
-          });
-        },
-      });
-
-      ScrollTrigger.batch(revealChildren, {
-        start: "top 88%",
-        once: true,
-        onEnter: (batch) => {
-          gsap.to(batch, {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.68,
-            stagger: { each: 0.045, from: "start" },
-            ease: "power3.out",
-            overwrite: true,
-          });
-        },
-      });
-
-      gsap.to(footerChars, {
-        yPercent: 0,
-        autoAlpha: 1,
-        duration: 0.72,
-        stagger: 0.012,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ".split-footer",
-          start: "top 84%",
-          once: true,
-        },
-      });
-
-      const refreshOnLoad = () => ScrollTrigger.refresh();
-      window.addEventListener("load", refreshOnLoad, { once: true });
-
-      return () => {
-        window.removeEventListener("load", refreshOnLoad);
-      };
-    });
-
-    return () => mm.revert();
-  }, { scope: rootRef });
-
-  function handleBriefSubmit(event) {
-    event.preventDefault();
-    setBriefStatus("Ready to send");
-  }
-
-  function handleQuickChoice(choice) {
-    setBriefStatus(choice);
-    const textarea = document.querySelector('textarea[name="slowWork"]');
-    if (textarea) {
-      textarea.value = choice;
-      textarea.focus();
-    }
-  }
-
   return (
-    <div className="app-shell" ref={rootRef}>
-      <CursorFollower />
+    <div className="site-shell">
       <header className="site-header">
-        <div className="site-header-shell">
-          <button className="brand-button" type="button" onClick={scrollToTop} aria-label="Synqora home">
-            <img src="/assets/brand/synqora-gradient-wordmark.svg" alt="Synqora" />
-          </button>
-
-          <nav className="desktop-nav" aria-label="Main navigation">
-            {navItems.map((item) => (
-              <AppShellButton className="nav-link" key={item.target} onClick={() => scrollToSection(item.target)}>
-                {item.label}
-              </AppShellButton>
-            ))}
-            <button className="acid-pill nav-cta" type="button" onClick={() => scrollToSection("contact")}>
-              Start
-              <span aria-hidden="true">-&gt;</span>
-            </button>
-          </nav>
-
-          <button
-            className="mobile-menu-button"
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            Menu
-          </button>
-        </div>
+        <p className="wordmark">Synqora</p>
       </header>
 
-      {menuOpen ? (
-        <nav className="mobile-menu" id="mobile-menu" aria-label="Mobile navigation">
-          {navItems.map((item) => (
-            <button
-              key={item.target}
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                scrollToSection(item.target);
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              scrollToSection("contact");
-            }}
-          >
-            Start
-          </button>
-        </nav>
-      ) : null}
-
       <main>
-        {gsapScaleHero ? <KineticHero onStart={() => scrollToSection("contact")} /> : null}
-        <section className="ticker" aria-label="Synqora focus areas">
-          <span>Beginner AI training</span>
-          <span>Company knowledge helpers</span>
-          <span>Customer intake</span>
-          <span>Weekly report automation</span>
-          <span>Simple AI websites</span>
-          <span>Useful team workflows</span>
-        </section>
-        <PainPointChooser activeId={activeId} onSelect={setActiveId} />
-        <ProblemOutcomeSection />
-        <MethodStrip />
-        <ExampleTransformations />
-        <FaqSection openIndex={faqOpen} onToggle={setFaqOpen} />
-        <ContactBrief
-          selectedTitle={activePoint.title}
-          status={briefStatus}
-          onSubmit={handleBriefSubmit}
-          onQuickChoice={handleQuickChoice}
-        />
+        {textScreens.map((screen, index) => (
+          <TextScreen screen={screen} index={index} key={screen.id} />
+        ))}
       </main>
-
-      <SplitFooter />
+      <CrowdFooter />
+      <SitePet />
     </div>
   );
 }

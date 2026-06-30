@@ -3,6 +3,15 @@ dist/
 .npm-cache/
 .superpowers/
 qa/
+.claude/
+.tmp/
+_unused_assets/
+screenlog.*
+convert-hero.mjs
+public/assets/nano/mobile/
+public/assets/nano/synqora-cinematic-*.webp
+public/assets/nano/synqora-one-useful-tool-hero.*
+public/assets/nano/synqora-story-*.webp
 
 .DS_Store
 *.log
