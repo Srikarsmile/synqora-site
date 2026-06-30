@@ -267,6 +267,8 @@ function DepthScrollController({ panelCount }) {
     const velocityDamping = 0.12;
     const velocityMax = 1.5;
     const nativeScrollIntoView = Element.prototype.scrollIntoView;
+    const rootStyleCache = new Map();
+    const panelStyleCaches = panels.map(() => new Map());
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const lerp = (from, to, amount) => from + (to - from) * amount;
@@ -277,6 +279,11 @@ function DepthScrollController({ panelCount }) {
 
       return "auto";
     };
+    const setCachedProperty = (style, cache, name, value) => {
+      if (cache.get(name) === value) return;
+      cache.set(name, value);
+      style.setProperty(name, value);
+    };
 
     const setScrollVariables = ({
       progress = 0,
@@ -286,52 +293,67 @@ function DepthScrollController({ panelCount }) {
       const clampedVelocity = Math.max(-2.2, Math.min(2.2, velocity));
       const intensity = Math.min(1, Math.abs(clampedVelocity) * 0.26);
 
-      root.style.setProperty("--scroll-progress", clampedProgress.toFixed(4));
-      root.style.setProperty("--scroll-velocity", clampedVelocity.toFixed(4));
-      root.style.setProperty("--scroll-intensity", intensity.toFixed(4));
-      root.style.setProperty("--scroll-drift-x", `${(clampedVelocity * 12).toFixed(2)}px`);
-      root.style.setProperty("--scroll-drift-y", `${(clampedVelocity * -20).toFixed(2)}px`);
-      root.style.setProperty("--depth-scroll-target", scrollTarget.toFixed(4));
-      root.style.setProperty("--depth-scroll-current", scrollCurrent.toFixed(4));
-      root.style.setProperty("--depth-active-index", String(Math.round(clamp(scrollTarget, 0, maxDepthIndex))));
+      setCachedProperty(root.style, rootStyleCache, "--scroll-progress", clampedProgress.toFixed(3));
+      setCachedProperty(root.style, rootStyleCache, "--scroll-velocity", clampedVelocity.toFixed(3));
+      setCachedProperty(root.style, rootStyleCache, "--scroll-intensity", intensity.toFixed(3));
+      setCachedProperty(root.style, rootStyleCache, "--scroll-drift-x", `${(clampedVelocity * 10).toFixed(1)}px`);
+      setCachedProperty(root.style, rootStyleCache, "--scroll-drift-y", `${(clampedVelocity * -16).toFixed(1)}px`);
+      setCachedProperty(root.style, rootStyleCache, "--depth-scroll-target", scrollTarget.toFixed(3));
+      setCachedProperty(root.style, rootStyleCache, "--depth-scroll-current", scrollCurrent.toFixed(3));
+      setCachedProperty(root.style, rootStyleCache, "--depth-active-index", String(Math.round(clamp(scrollTarget, 0, maxDepthIndex))));
     };
 
     const setPanelVariables = () => {
       const velocityIntensity = Math.min(1, Math.abs(velocity) / velocityMax);
+      const activeIndex = Math.round(clamp(scrollTarget, 0, maxDepthIndex));
 
       panels.forEach((panel, index) => {
         const distance = index - scrollCurrent;
         const absDistance = Math.min(2, Math.abs(distance));
+        const isRenderable = Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
+        const cache = panelStyleCaches[index];
+        const style = panel.style;
+
+        if (!isRenderable) {
+          const parkedDistance = index < scrollCurrent ? "-2.000" : "2.000";
+          const parkedY = index < scrollCurrent ? "-96px" : "96px";
+
+          setCachedProperty(style, cache, "--screen-distance", parkedDistance);
+          setCachedProperty(style, cache, "--screen-copy-opacity", "0");
+          setCachedProperty(style, cache, "--screen-copy-y", parkedY);
+          setCachedProperty(style, cache, "--screen-copy-scale", "0.870");
+          setCachedProperty(style, cache, "--screen-depth-z", "-360px");
+          setCachedProperty(style, cache, "--screen-gradient-opacity", "0.180");
+          setCachedProperty(style, cache, "--screen-ambient-opacity", "0.220");
+          setCachedProperty(style, cache, "--depth-field-opacity", "0.100");
+          setCachedProperty(style, cache, "--depth-field-y", parkedY);
+          setCachedProperty(style, cache, "--screen-layer", String(70 + index));
+          return;
+        }
+
         const closeDistance = Math.min(1, absDistance);
         const presence = clamp(1 - closeDistance * 0.9, 0, 1);
         const copyOpacity = clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
         const depthScale = 1 - Math.min(absDistance * 0.065, 0.13);
-        const copyY = distance * 52 - velocity * 150;
+        const copyY = distance * 46 - velocity * 112;
         const depthZ = -absDistance * 190;
-        const blur = Math.max(0, absDistance - 0.68) * 8;
         const layer = 100 + panels.length - Math.round(absDistance * 16);
 
-        panel.style.setProperty("--screen-distance", distance.toFixed(4));
-        panel.style.setProperty("--screen-abs-distance", absDistance.toFixed(4));
-        panel.style.setProperty("--depth-presence", presence.toFixed(4));
-        panel.style.setProperty("--screen-copy-opacity", copyOpacity.toFixed(4));
-        panel.style.setProperty("--screen-copy-y", `${copyY.toFixed(2)}px`);
-        panel.style.setProperty("--screen-copy-scale", depthScale.toFixed(4));
-        panel.style.setProperty("--screen-depth-z", `${depthZ.toFixed(2)}px`);
-        panel.style.setProperty("--screen-blur", `${blur.toFixed(2)}px`);
-        panel.style.setProperty("--screen-layer", String(layer));
-        panel.style.setProperty("--screen-gradient-opacity", (0.28 + presence * 0.2 + velocityIntensity * 0.1).toFixed(4));
-        panel.style.setProperty("--screen-gradient-scale", (1.04 + velocityIntensity * 0.05).toFixed(4));
-        panel.style.setProperty("--screen-ambient-opacity", (0.32 + presence * 0.24 + velocityIntensity * 0.08).toFixed(4));
-        panel.style.setProperty("--depth-field-opacity", (0.3 + presence * 0.44 + velocityIntensity * 0.1).toFixed(4));
-        panel.style.setProperty("--depth-field-y", `${(distance * 34 - velocity * 220).toFixed(2)}px`);
-        panel.style.setProperty("--depth-field-scale", (0.92 + presence * 0.08 + velocityIntensity * 0.06).toFixed(4));
+        setCachedProperty(style, cache, "--screen-distance", distance.toFixed(3));
+        setCachedProperty(style, cache, "--screen-copy-opacity", copyOpacity.toFixed(3));
+        setCachedProperty(style, cache, "--screen-copy-y", `${copyY.toFixed(1)}px`);
+        setCachedProperty(style, cache, "--screen-copy-scale", depthScale.toFixed(3));
+        setCachedProperty(style, cache, "--screen-depth-z", `${depthZ.toFixed(1)}px`);
+        setCachedProperty(style, cache, "--screen-layer", String(layer));
+        setCachedProperty(style, cache, "--screen-gradient-opacity", (0.28 + presence * 0.2 + velocityIntensity * 0.08).toFixed(3));
+        setCachedProperty(style, cache, "--screen-ambient-opacity", (0.32 + presence * 0.24).toFixed(3));
+        setCachedProperty(style, cache, "--depth-field-opacity", (0.3 + presence * 0.44).toFixed(3));
+        setCachedProperty(style, cache, "--depth-field-y", `${(distance * 30 - velocity * 150).toFixed(1)}px`);
       });
     };
 
     const raf = (time) => {
       void time;
-      viewportHeight = Math.max(window.innerHeight, 1);
       scrollTarget = clamp(window.scrollY / viewportHeight, 0, maxDepthIndex);
       scrollCurrent = lerp(scrollCurrent, scrollTarget, scrollSmoothing);
 

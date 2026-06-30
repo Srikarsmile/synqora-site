@@ -112,14 +112,11 @@ body {
   --screen-copy-y: 0px;
   --screen-copy-scale: 1;
   --screen-depth-z: 0px;
-  --screen-blur: 0px;
   --screen-layer: 1;
   --screen-gradient-opacity: 0.44;
-  --screen-gradient-scale: 1.05;
   --screen-ambient-opacity: 0.58;
   --depth-field-opacity: 0.6;
   --depth-field-y: 0px;
-  --depth-field-scale: 1;
   position: relative;
   position: sticky;
   top: 0;
@@ -176,7 +173,7 @@ body {
     radial-gradient(42% 48% at 78% 24%, rgba(255, 255, 255, 0.2), transparent 72%),
     radial-gradient(48% 42% at 52% 82%, rgba(255, 255, 255, 0.18), transparent 70%);
   opacity: var(--screen-gradient-opacity);
-  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0) scale(var(--screen-gradient-scale));
+  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0) scale(1.05);
   will-change: transform, opacity;
   pointer-events: none;
 }
@@ -240,7 +237,7 @@ body {
   opacity: var(--depth-field-opacity);
   perspective: 1100px;
   pointer-events: none;
-  transform: translate3d(0, var(--depth-field-y), 0) scale(var(--depth-field-scale));
+  transform: translate3d(0, var(--depth-field-y), 0);
   transform-style: preserve-3d;
   will-change: transform, opacity;
 }
@@ -412,8 +409,7 @@ body {
   opacity: var(--screen-copy-opacity);
   transform: translate3d(0, var(--screen-copy-y), var(--screen-depth-z)) scale(var(--screen-copy-scale));
   transform-origin: 50% 54%;
-  filter: blur(var(--screen-blur));
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 .text-screen[data-align="left"] .screen-copy {
