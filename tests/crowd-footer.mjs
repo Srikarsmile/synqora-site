@@ -75,6 +75,15 @@ const report = await page.evaluate(async () => {
   window.scrollTo(0, document.documentElement.scrollHeight);
   await new Promise((resolve) => setTimeout(resolve, 900));
   const titleRect = title?.getBoundingClientRect();
+  const titleLineRects = [...(footer?.querySelectorAll(".crowd-footer-title span") ?? [])].map((line) => {
+    const rect = line.getBoundingClientRect();
+    return {
+      bottom: Math.round(rect.bottom * 10) / 10,
+      text: line.textContent?.trim() ?? "",
+      top: Math.round(rect.top * 10) / 10,
+    };
+  });
+  const titleLineGaps = titleLineRects.slice(1).map((rect, index) => Math.round((rect.top - titleLineRects[index].bottom) * 10) / 10);
   const canvasRect = canvas?.getBoundingClientRect();
   const footerRect = footer?.getBoundingClientRect();
   const emailRect = email?.getBoundingClientRect();
@@ -99,6 +108,8 @@ const report = await page.evaluate(async () => {
     hasLabelElement: Boolean(footer?.querySelector(".crowd-footer-label")),
     title: footer?.querySelector(".crowd-footer-title")?.textContent?.trim() ?? "",
     titleLines: [...(footer?.querySelectorAll(".crowd-footer-title span") ?? [])].map((line) => line.textContent?.trim() ?? ""),
+    titleLineGaps,
+    titleLineRects,
     email: footer?.querySelector(".crowd-footer-email")?.textContent?.trim() ?? "",
     emailHref: footer?.querySelector(".crowd-footer-email .email-link")?.getAttribute("href") ?? "",
     emailInitialDecoration: footer?.querySelector(".crowd-footer-email .email-link")
@@ -150,6 +161,9 @@ if (report.canvasWidth < 900 || report.canvasHeight < 140) {
 if (!report.titleAbovePeople) failures.push("Crowd footer title should sit above the people canvas.");
 if (report.titleLines.length !== 4) {
   failures.push(`Crowd footer title should be split into a fuller four-line composition: ${JSON.stringify(report.titleLines)}`);
+}
+if (Math.min(...report.titleLineGaps) < 8) {
+  failures.push(`Crowd footer title lines should not collide: gaps=${JSON.stringify(report.titleLineGaps)} rects=${JSON.stringify(report.titleLineRects)}`);
 }
 if (!report.emailNearBottom) failures.push("Crowd footer email should sit near the bottom edge.");
 if (!report.emailAbovePeople) failures.push("Crowd footer email should sit above the people canvas.");
