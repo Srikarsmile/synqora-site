@@ -32,7 +32,6 @@ const staticFailures = [];
   "framer-motion",
   "useScroll",
   "useTransform",
-  'addEventListener("scroll"',
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
     staticFailures.push(`Flow line should be removed, found: ${token}`);

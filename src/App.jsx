@@ -170,14 +170,41 @@ function useElementVisibility(targetRef, { rootMargin = "0px", threshold = 0.72 
   );
 }
 
+function useMediaQuery(query, serverSnapshot = false) {
+  return useSyncExternalStore(
+    (notify) => {
+      if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+        return () => {};
+      }
+
+      const media = window.matchMedia(query);
+      if (typeof media.addEventListener === "function") {
+        media.addEventListener("change", notify);
+        return () => media.removeEventListener("change", notify);
+      }
+
+      media.addListener(notify);
+      return () => media.removeListener(notify);
+    },
+    () => (
+      typeof window !== "undefined"
+      && typeof window.matchMedia === "function"
+      && window.matchMedia(query).matches
+    ),
+    () => serverSnapshot,
+  );
+}
+
 function HeroShaderGradient() {
   const shaderRef = useRef(null);
   const shaderActive = useElementVisibility(shaderRef);
+  const allowWebGL = useMediaQuery("(min-width: 761px)");
+  const renderShader = allowWebGL && shaderActive;
 
   return (
     <div className="hero-shader-backdrop" aria-hidden="true" ref={shaderRef}>
       <div className="hero-shader-fallback" />
-      {shaderActive ? (
+      {renderShader ? (
         <Suspense fallback={null}>
           <LazyShaderGradientCanvas
             className="hero-shader-canvas"
@@ -190,7 +217,7 @@ function HeroShaderGradient() {
             rootMargin="240px"
           >
             <LazyShaderGradient
-              animate={shaderActive ? "on" : "off"}
+              animate="on"
               axesHelper="off"
               brightness={1.2}
               cAzimuthAngle={180}
@@ -261,17 +288,32 @@ function DepthScrollController({ panelCount }) {
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const mobileNativeScroll = window.matchMedia?.("(max-width: 760px)")?.matches ?? false;
+    let mobileMotion = mobileNativeScroll;
     const panels = [...document.querySelectorAll(".text-screen")];
     const maxDepthIndex = Math.max(panelCount - 1, 1);
+
+    if (mobileNativeScroll) {
+      root.setAttribute("data-depth-scroll", "mobile-native");
+      root.setAttribute("data-depth-scroll-state", "idle");
+
+      return () => {
+        root.removeAttribute("data-depth-scroll");
+        root.removeAttribute("data-depth-scroll-state");
+      };
+    }
+
     let frame = 0;
     let viewportHeight = Math.max(window.innerHeight, 1);
     let scrollTarget = Math.min(maxDepthIndex, Math.max(0, window.scrollY / viewportHeight));
     let scrollCurrent = scrollTarget;
     let previousScrollCurrent = scrollCurrent;
     let velocity = 0;
-    const scrollSmoothing = reducedMotion ? 1 : 0.12;
-    const velocityDamping = 0.12;
-    const velocityMax = 1.5;
+    const scrollSmoothing = reducedMotion ? 1 : mobileMotion ? 0.3 : 0.18;
+    const velocityDamping = mobileMotion ? 0.2 : 0.14;
+    const velocityMax = mobileMotion ? 0.9 : 1.35;
+    const settleEpsilon = reducedMotion ? 0.001 : mobileMotion ? 0.007 : 0.003;
+    const velocityEpsilon = reducedMotion ? 0.001 : mobileMotion ? 0.0028 : 0.0015;
     const nativeScrollIntoView = Element.prototype.scrollIntoView;
     const rootStyleCache = new Map();
     const panelStyleCaches = panels.map(() => new Map());
@@ -314,10 +356,13 @@ function DepthScrollController({ panelCount }) {
       const activeIndex = Math.round(clamp(scrollTarget, 0, maxDepthIndex));
 
       panels.forEach((panel, index) => {
-        const distance = index - scrollCurrent;
-        const absDistance = Math.min(2, Math.abs(distance));
-        const isRenderable = Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
         const stableDepth = panel.dataset.depthStable === "true";
+        const activeStableDepth = stableDepth && activeIndex === index;
+        const rawDistance = index - scrollCurrent;
+        const distance = activeStableDepth ? 0 : rawDistance;
+        const absDistance = Math.min(2, Math.abs(distance));
+        const isRenderable = activeStableDepth || Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
+        const restrainedDepth = stableDepth || mobileMotion;
         const cache = panelStyleCaches[index];
         const style = panel.style;
 
@@ -340,16 +385,16 @@ function DepthScrollController({ panelCount }) {
 
         const closeDistance = Math.min(1, absDistance);
         const presence = clamp(1 - closeDistance * 0.9, 0, 1);
-        const copyOpacity = stableDepth
+        const copyOpacity = restrainedDepth
           ? clamp(1 - Math.max(0, absDistance - 0.16) * 1.05, 0, 1)
           : clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
-        const depthScale = 1 - Math.min(absDistance * (stableDepth ? 0.035 : 0.065), stableDepth ? 0.07 : 0.13);
-        const copyY = stableDepth ? distance * 18 - velocity * 28 : distance * 46 - velocity * 112;
-        const depthZ = -absDistance * (stableDepth ? 70 : 190);
-        const layer = stableDepth && activeIndex === index
+        const depthScale = 1 - Math.min(absDistance * (restrainedDepth ? 0.032 : 0.065), restrainedDepth ? 0.062 : 0.13);
+        const copyY = activeStableDepth ? 0 : restrainedDepth ? distance * 18 - velocity * 28 : distance * 46 - velocity * 112;
+        const depthZ = -absDistance * (restrainedDepth ? 62 : 190);
+        const layer = activeStableDepth
           ? 130
           : 100 + panels.length - Math.round(absDistance * 16);
-        const fieldY = stableDepth ? distance * 14 - velocity * 46 : distance * 30 - velocity * 150;
+        const fieldY = activeStableDepth ? 0 : restrainedDepth ? distance * 14 - velocity * 42 : distance * 30 - velocity * 150;
 
         setCachedProperty(style, cache, "--screen-distance", distance.toFixed(3));
         setCachedProperty(style, cache, "--screen-copy-opacity", copyOpacity.toFixed(3));
@@ -364,8 +409,25 @@ function DepthScrollController({ panelCount }) {
       });
     };
 
+    const stopDepthFrame = () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      root.setAttribute("data-depth-scroll-state", "idle");
+    };
+
+    const scheduleDepthFrame = () => {
+      if (frame) return;
+      if (root.getAttribute("data-depth-scroll-state") !== "scrolling") {
+        root.setAttribute("data-depth-scroll-state", "settling");
+      }
+      frame = window.requestAnimationFrame(raf);
+    };
+
     const raf = (time) => {
       void time;
+      frame = 0;
       scrollTarget = clamp(window.scrollY / viewportHeight, 0, maxDepthIndex);
       scrollCurrent = lerp(scrollCurrent, scrollTarget, scrollSmoothing);
 
@@ -381,11 +443,32 @@ function DepthScrollController({ panelCount }) {
       setPanelVariables();
 
       previousScrollCurrent = scrollCurrent;
-      frame = window.requestAnimationFrame(raf);
+      if (Math.abs(scrollTarget - scrollCurrent) <= settleEpsilon && Math.abs(velocity) <= velocityEpsilon) {
+        scrollCurrent = scrollTarget;
+        previousScrollCurrent = scrollCurrent;
+        velocity = 0;
+        setScrollVariables({
+          progress: clamp(scrollCurrent / maxDepthIndex, 0, 1),
+          velocity,
+        });
+        setPanelVariables();
+        stopDepthFrame();
+        return;
+      }
+
+      scheduleDepthFrame();
+    };
+
+    const handleScroll = () => {
+      scrollTarget = clamp(window.scrollY / viewportHeight, 0, maxDepthIndex);
+      root.setAttribute("data-depth-scroll-state", "scrolling");
+      scheduleDepthFrame();
     };
 
     const handleResize = () => {
       viewportHeight = Math.max(window.innerHeight, 1);
+      mobileMotion = window.matchMedia?.("(max-width: 760px)")?.matches ?? mobileMotion;
+      handleScroll();
     };
 
     Element.prototype.scrollIntoView = function scrollIntoViewWithDepthPanels(options) {
@@ -402,16 +485,20 @@ function DepthScrollController({ panelCount }) {
     };
 
     root.setAttribute("data-depth-scroll", reducedMotion ? "reduced" : "active");
+    root.setAttribute("data-depth-scroll-state", "settling");
     setScrollVariables();
     setPanelVariables();
-    frame = window.requestAnimationFrame(raf);
+    scheduleDepthFrame();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
-      window.cancelAnimationFrame(frame);
+      stopDepthFrame();
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
       Element.prototype.scrollIntoView = nativeScrollIntoView;
       root.removeAttribute("data-depth-scroll");
+      root.removeAttribute("data-depth-scroll-state");
       setScrollVariables();
     };
   }, [panelCount]);
@@ -446,234 +533,6 @@ function TextScreen({ screen, index }) {
         ) : null}
       </div>
     </section>
-  );
-}
-
-function SitePet() {
-  const petRef = useRef(null);
-
-  const petCompanion = () => {
-    const pet = petRef.current;
-    if (!pet) return;
-
-    pet.dataset.petState = "petted";
-  };
-
-  useEffect(() => {
-    const pet = petRef.current;
-    if (!pet) return undefined;
-
-    const root = document.documentElement;
-    const sections = [...document.querySelectorAll(".text-screen")];
-    let alignTimer = 0;
-    let movementTimer = 0;
-    let stateTimer = 0;
-    let lastX = 0;
-    let lastY = 0;
-    let targetIndex = 0;
-    let activePetAlign = "center";
-    let activeFooterLift = 0;
-    let footerIsVisible = false;
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    const crowdFooter = document.querySelector(".site-crowd-footer");
-    const crowdCanvasWrap = crowdFooter?.querySelector(".crowd-canvas-wrap");
-
-    const getPetAvoidSide = () => (activePetAlign === "left" || activePetAlign === "right" ? activePetAlign : "none");
-    const getPetSafeSide = () => (activePetAlign === "right" ? "left" : "right");
-    const getPetFooterState = () => (activeFooterLift > 0 ? "above-crowd" : "clear");
-    const isMobileFooterMode = () => footerIsVisible && activeFooterLift > 0 && window.innerWidth <= 760;
-
-    const setPosition = (x, y, state = "roaming") => {
-      if (state === "roaming") {
-        const dx = x - lastX;
-        const dy = y - lastY;
-        pet.dataset.petDirection = Math.abs(dx) >= Math.abs(dy)
-          ? dx >= 0 ? "right" : "left"
-          : dy >= 0 ? "down" : "up";
-      }
-      pet.style.setProperty("--pet-x", `${Math.round(x)}px`);
-      pet.style.setProperty("--pet-y", `${Math.round(y)}px`);
-      pet.dataset.petAvoid = getPetAvoidSide();
-      pet.dataset.petFooter = getPetFooterState();
-      pet.dataset.petState = state;
-      lastX = x;
-      lastY = y;
-    };
-
-    const getBounds = () => {
-      const size = pet.offsetWidth || 78;
-      const pad = Math.max(16, Math.min(window.innerWidth, window.innerHeight) * 0.02);
-      const maxY = window.innerHeight - size - pad - activeFooterLift;
-      return {
-        maxX: Math.max(pad, window.innerWidth - size - pad),
-        maxY: Math.max(pad, maxY),
-        minX: pad,
-      };
-    };
-
-    const edgeTargets = (bounds, side = getPetSafeSide()) => {
-      const travel = bounds.maxX - bounds.minX;
-      const size = pet.offsetWidth || 78;
-
-      if (isMobileFooterMode()) {
-        const centerX = Math.round(window.innerWidth / 2 - size / 2);
-        return [
-          { x: centerX, y: bounds.maxY },
-          { x: Math.max(bounds.minX, centerX - 26), y: bounds.maxY },
-          { x: Math.min(bounds.maxX, centerX + 26), y: bounds.maxY },
-        ];
-      }
-
-      const safeMinX = Math.round(bounds.maxX - travel * 0.34);
-      const safeMaxX = Math.round(bounds.minX + travel * 0.34);
-
-      if (side === "left") {
-        return [
-          { x: bounds.minX, y: bounds.maxY },
-          { x: Math.round(bounds.minX + travel * 0.14), y: bounds.maxY },
-          { x: safeMaxX, y: bounds.maxY },
-          { x: Math.round(bounds.minX + travel * 0.24), y: bounds.maxY },
-        ];
-      }
-
-      return [
-        { x: bounds.maxX, y: bounds.maxY },
-        { x: Math.round(bounds.maxX - travel * 0.14), y: bounds.maxY },
-        { x: safeMinX, y: bounds.maxY },
-        { x: Math.round(bounds.maxX - travel * 0.24), y: bounds.maxY },
-      ];
-    };
-
-    const settleHome = () => {
-      const bounds = getBounds();
-      const size = pet.offsetWidth || 78;
-      const homeX = isMobileFooterMode()
-        ? Math.round(window.innerWidth / 2 - size / 2)
-        : getPetSafeSide() === "left" ? bounds.minX : bounds.maxX;
-      setPosition(homeX, bounds.maxY, "idle");
-    };
-
-    const roam = () => {
-      const bounds = getBounds();
-      const targets = edgeTargets(bounds, getPetSafeSide());
-      targetIndex = (targetIndex + 1) % targets.length;
-      const { x, y } = targets[targetIndex];
-      window.clearTimeout(stateTimer);
-      setPosition(x, y, "roaming");
-      stateTimer = window.setTimeout(() => {
-        if (pet.dataset.petState === "roaming") {
-          pet.dataset.petState = Math.random() > 0.78 ? "sleeping" : "idle";
-        }
-      }, 1750);
-    };
-
-    const setActivePetAlign = (align) => {
-      if (activePetAlign === align) return;
-      activePetAlign = align;
-      targetIndex = 0;
-      settleHome();
-    };
-
-    const syncActivePetAlign = () => {
-      const activeIndex = Math.round(Number(root.style.getPropertyValue("--depth-active-index")) || 0);
-      const activeSection = sections[Math.max(0, Math.min(sections.length - 1, activeIndex))];
-      setActivePetAlign(activeSection?.getAttribute("data-align") || "center");
-    };
-
-    const readFooterLift = () => {
-      if (!footerIsVisible) return 0;
-
-      const crowdLift = Math.round(crowdCanvasWrap?.offsetHeight || 0);
-      const mobileLift = window.innerWidth <= 760
-        ? Math.round(Math.min(132, Math.max(104, window.innerHeight * 0.14)))
-        : 0;
-
-      return crowdLift + mobileLift;
-    };
-
-    const setActiveFooterLift = (lift) => {
-      const nextLift = Math.max(0, Math.round(lift));
-      if (activeFooterLift === nextLift) return;
-      activeFooterLift = nextLift;
-      pet.dataset.petFooter = getPetFooterState();
-      targetIndex = 0;
-      settleHome();
-    };
-
-    const sectionObserver = typeof IntersectionObserver === "undefined"
-      ? null
-      : new IntersectionObserver(
-        (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) syncActivePetAlign();
-        },
-        { threshold: [0.35, 0.6, 0.82] },
-      );
-
-    const footerObserver = typeof IntersectionObserver === "undefined"
-      ? null
-      : new IntersectionObserver(
-        ([entry]) => {
-          footerIsVisible = entry.isIntersecting;
-          setActiveFooterLift(readFooterLift());
-        },
-        { threshold: [0.01, 0.35, 0.65] },
-      );
-
-    if (reducedMotion?.matches) {
-      pet.dataset.petMotion = "reduced";
-      settleHome();
-    } else {
-      pet.dataset.petMotion = "active";
-      settleHome();
-      syncActivePetAlign();
-      alignTimer = window.setInterval(syncActivePetAlign, 240);
-      movementTimer = window.setInterval(roam, 3400);
-    }
-
-    sections.forEach((section) => sectionObserver?.observe(section));
-    if (crowdFooter) {
-      footerObserver?.observe(crowdFooter);
-    }
-    const handleResize = () => {
-      setActiveFooterLift(readFooterLift());
-      settleHome();
-    };
-    window.addEventListener("resize", handleResize, { passive: true });
-
-    return () => {
-      window.clearInterval(movementTimer);
-      window.clearInterval(alignTimer);
-      window.clearTimeout(stateTimer);
-      sectionObserver?.disconnect();
-      footerObserver?.disconnect();
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const handleKeyDown = (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    petCompanion();
-  };
-
-  return (
-    <button
-      className="site-pet"
-      data-pet-clarity="high"
-      data-pet-direction="right"
-      data-pet-motion="active"
-      data-pet-avoid="none"
-      data-pet-footer="clear"
-      data-pet-state="idle"
-      data-site-pet-source="derDere/site-pet"
-      type="button"
-      aria-label="Pet Synqora site companion"
-      onClick={petCompanion}
-      onKeyDown={handleKeyDown}
-      ref={petRef}
-    >
-      <span className="site-pet-sprite" aria-hidden="true" />
-    </button>
   );
 }
 
@@ -943,7 +802,6 @@ export function App() {
         ))}
       </main>
       <CrowdFooter />
-      <SitePet />
     </div>
   );
 }

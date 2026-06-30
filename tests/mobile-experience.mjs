@@ -16,7 +16,6 @@ const staticFailures = [];
   "scroll-snap-type: none",
   "crowd-footer-title",
   "crowd-canvas-wrap",
-  "site-pet",
 ].forEach((token) => {
   if (!css.includes(token)) staticFailures.push(`Missing mobile layout token: ${token}`);
 });
@@ -106,7 +105,6 @@ const footerReport = await page.evaluate(() => {
     crowd: rectOf(".crowd-canvas-wrap"),
     email: rectOf(".crowd-footer-email"),
     footer: rectOf(".site-crowd-footer"),
-    pet: rectOf(".site-pet"),
     title: rectOf(".crowd-footer-title"),
     titleLines: [...document.querySelectorAll(".crowd-footer-title span")].map((line) => line.textContent?.trim() ?? ""),
     bodyBackground: getComputedStyle(document.body).backgroundColor,

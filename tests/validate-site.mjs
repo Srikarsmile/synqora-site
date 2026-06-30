@@ -12,9 +12,11 @@ const requiredAppTokens = [
   "function HeroShaderGradient",
   "function TextScreen",
   "function useElementVisibility",
+  "function useMediaQuery",
   "IntersectionObserver",
   "useSyncExternalStore",
-  'animate={shaderActive ? "on" : "off"}',
+  "const renderShader = allowWebGL && shaderActive",
+  'animate="on"',
   'color1="#ff5005"',
   'color2="#dbba95"',
   'color3="#d0bce1"',
@@ -64,7 +66,14 @@ const checks = [
   ["CSS keeps the required full-screen gradient structure", requiredCssTokens.every((token) => css.includes(token))],
   ["Old card/image surfaces removed", forbiddenTokens.every((token) => !app.includes(token) && !css.includes(token))],
   ["Contact form is the only restored form surface", app.includes("contact-form") && app.includes("function ContactForm")],
-  ["No scroll-time JS transition loop", !app.includes('addEventListener("scroll"') && !app.includes("getBoundingClientRect") && !app.includes("requestAnimationFrame(render)")],
+  [
+    "Depth scroll uses an idle scheduler instead of a continuous render loop",
+    app.includes("scheduleDepthFrame")
+      && app.includes("stopDepthFrame")
+      && app.includes("data-depth-scroll-state")
+      && !app.includes("getBoundingClientRect")
+      && !app.includes("requestAnimationFrame(render)"),
+  ],
   ["No unused hero image preload", !html.includes('rel="preload"') && !html.includes("synqora-hero-nano.webp")],
   ["No external font stylesheet", !html.includes("fonts.googleapis.com") && !html.includes("fonts.gstatic.com")],
   ["HTML root loader is text-only", !html.includes("<img") && html.includes("Loading")],

@@ -31,13 +31,16 @@ const staticFailures = [];
   "framer-motion",
   "useScroll",
   "useTransform",
-  'addEventListener("scroll"',
   "requestAnimationFrame(render)",
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
     staticFailures.push(`Depth motion should stay compositor/CSS-driven, found: ${token}`);
   }
 });
+
+if (!app.includes('window.addEventListener("scroll", handleScroll, { passive: true })')) {
+  staticFailures.push("Depth motion should use a passive scroll listener to schedule idle-safe frames.");
+}
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage({

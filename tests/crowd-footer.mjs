@@ -9,6 +9,10 @@ const css = readFileSync(resolve(root, "src/styles.css"), "utf8");
 const peepsSpritePath = resolve(root, "public/images/peeps/all-peeps.png");
 
 const staticFailures = [];
+const crowdSurface = app.slice(
+  app.indexOf("function CrowdCanvas"),
+  app.indexOf("export function App"),
+);
 [
   "function CrowdCanvas",
   "function CrowdFooter",
@@ -34,10 +38,17 @@ const staticFailures = [];
   'import { gsap }',
   "gsap.",
   "@gsap/react",
-  'addEventListener("scroll"',
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
     staticFailures.push(`Crowd footer should stay local and scroll-passive, found: ${token}`);
+  }
+});
+
+[
+  'addEventListener("scroll"',
+].forEach((token) => {
+  if (crowdSurface.includes(token)) {
+    staticFailures.push(`Crowd footer should not subscribe to page scroll, found: ${token}`);
   }
 });
 

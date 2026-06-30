@@ -52,7 +52,6 @@ requiredContentTokens.forEach((token) => {
   "brief-form",
   "<picture",
   "<img",
-  'addEventListener("scroll"',
   "getBoundingClientRect",
   "--screen-presence",
   "AI training and implementation",
@@ -89,7 +88,7 @@ const report = await page.evaluate(() => {
   const screens = [...document.querySelectorAll(".text-screen")];
   const wordmark = document.querySelector(".wordmark");
   const hero = document.querySelector("#hero");
-  const hasForbiddenUi = Boolean(document.querySelector("button:not(.site-pet):not(.contact-submit), nav, img, picture, .screen-nav, .hero-tool-visual, .depth-gallery-card, .example-card, .brief-form"));
+  const hasForbiddenUi = Boolean(document.querySelector("button:not(.contact-submit), nav, img, picture, .screen-nav, .hero-tool-visual, .depth-gallery-card, .example-card, .brief-form"));
   const readScreen = (screen) => {
     const rect = screen.getBoundingClientRect();
     const style = getComputedStyle(screen);

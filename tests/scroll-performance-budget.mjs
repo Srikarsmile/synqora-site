@@ -13,7 +13,6 @@ const forbiddenPatterns = [
   ["paint-time drop shadows", /drop-shadow\(/],
   ["backdrop blur on moving layers", /backdrop-filter\s*:/],
   ["content-visibility reveal hitch", /content-visibility:\s*auto/],
-  ["JavaScript scroll listener", /addEventListener\((["'])scroll\1/],
   ["manual requestAnimationFrame render loop", /requestAnimationFrame\(render\)/],
   ["layout reads in scroll animation code", /getBoundingClientRect\(\)/],
 ];
@@ -25,6 +24,14 @@ const failures = forbiddenPatterns
 if (!css.includes("contain: layout paint style")) {
   failures.push("Moving visual layers should use layout/paint containment.");
 }
+
+[
+  "scheduleDepthFrame",
+  "stopDepthFrame",
+  "data-depth-scroll-state",
+].forEach((token) => {
+  if (!app.includes(token)) failures.push(`Depth scroll should have an idle scheduler token: ${token}.`);
+});
 
 if (failures.length > 0) {
   throw new Error(`Scroll performance budget failed:\n${failures.join("\n")}`);
@@ -93,6 +100,24 @@ const report = await page.evaluate(() => {
   };
 });
 
+await page.waitForTimeout(900);
+
+const idleReport = await page.evaluate(async () => {
+  const beforeWrites = window.__scrollPerfProbe.totalStyleWrites;
+  const beforeFrameCount = window.__scrollPerfProbe.frameGaps.length;
+
+  await new Promise((resolve) => setTimeout(resolve, 650));
+
+  const afterWrites = window.__scrollPerfProbe.totalStyleWrites;
+  const afterFrameCount = window.__scrollPerfProbe.frameGaps.length;
+
+  return {
+    depthState: document.documentElement.dataset.depthScrollState ?? "",
+    frames: afterFrameCount - beforeFrameCount,
+    writes: afterWrites - beforeWrites,
+  };
+});
+
 await browser.close();
 
 if (report.p95StyleWritesPerFrame > 42) {
@@ -103,6 +128,12 @@ if (report.p95FrameGap > 42) {
 }
 if (report.longFrames > Math.max(4, report.frames * 0.08)) {
   failures.push(`Depth scroll has too many long mobile frames: ${JSON.stringify(report)}.`);
+}
+if (idleReport.depthState !== "idle") {
+  failures.push(`Depth scroll should enter idle state after settling: ${JSON.stringify(idleReport)}.`);
+}
+if (idleReport.writes > 2) {
+  failures.push(`Idle depth scroll should stop writing styles: ${JSON.stringify(idleReport)}.`);
 }
 
 if (failures.length > 0) {
