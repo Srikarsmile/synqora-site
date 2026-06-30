@@ -20,6 +20,8 @@ const staticFailures = [];
   "Budget",
   "Timeline",
   "mailto:info@synqora.tech",
+  "data-depth-stable",
+  "backface-visibility: hidden",
 ].forEach((token) => {
   if (!app.includes(token) && !css.includes(token)) {
     staticFailures.push(`Missing contact form token: ${token}`);
@@ -80,7 +82,36 @@ const report = await page.evaluate(() => {
     method: form?.getAttribute("method") ?? "",
     submitText: submit?.textContent?.trim() ?? "",
     submitRadius: submitStyle?.borderRadius ?? "",
+    stableDepth: contact?.getAttribute("data-depth-stable") ?? "",
+    formBackface: form ? getComputedStyle(form).backfaceVisibility : "",
+    formContain: form ? getComputedStyle(form).contain : "",
     viewportWidth: window.innerWidth,
+  };
+});
+
+const stabilityReport = await page.evaluate(async () => {
+  const form = document.querySelector("#contact .contact-form");
+  if (!form) return { samples: [], topDrift: -1, leftDrift: -1, minOpacity: -1 };
+
+  const samples = [];
+  for (let index = 0; index < 16; index += 1) {
+    const rect = form.getBoundingClientRect();
+    const style = getComputedStyle(form);
+    samples.push({
+      left: rect.left,
+      opacity: Number(style.opacity),
+      top: rect.top,
+    });
+    await new Promise((resolveFrame) => requestAnimationFrame(resolveFrame));
+  }
+
+  const tops = samples.map((sample) => sample.top);
+  const lefts = samples.map((sample) => sample.left);
+  return {
+    samples,
+    topDrift: Math.max(...tops) - Math.min(...tops),
+    leftDrift: Math.max(...lefts) - Math.min(...lefts),
+    minOpacity: Math.min(...samples.map((sample) => sample.opacity)),
   };
 });
 
@@ -106,14 +137,28 @@ if (report.submitText !== "Send enquiry") failures.push(`Submit copy should be d
 if (!isDarkText(report.firstFieldColor)) failures.push(`Contact form field text should be dark: ${report.firstFieldColor}.`);
 if (parseFloat(report.firstFieldRadius) < 14) failures.push(`Contact fields should have Apple-style rounded corners: ${report.firstFieldRadius}.`);
 if (parseFloat(report.submitRadius) < 18) failures.push(`Submit button should have a soft Apple-style radius: ${report.submitRadius}.`);
-if (report.formLeft > report.viewportWidth * 0.2) failures.push(`Contact form should occupy the empty left side: left=${report.formLeft}.`);
+if (report.formLeft < 24 || report.formLeft > report.viewportWidth * 0.2) {
+  failures.push(`Contact form should occupy the empty left side without clipping: left=${report.formLeft}.`);
+}
 if (report.formRight > report.viewportWidth * 0.52) failures.push(`Contact form should not collide with the right copy: right=${report.formRight}.`);
 if (report.copyLeft < report.viewportWidth * 0.52) failures.push(`Contact copy should stay on the right side: left=${report.copyLeft}.`);
 if (report.formTop < 160 || report.formTop > 420) failures.push(`Contact form should sit vertically centered in the open area: top=${report.formTop}.`);
 if (report.visibleEmailCount !== 0) failures.push(`Contact screen should not show the email beside the form: ${report.visibleEmailCount}.`);
+if (report.stableDepth !== "true") failures.push(`Contact screen should opt into stable depth rendering: ${report.stableDepth}.`);
+if (report.formBackface !== "hidden") failures.push(`Contact form should hide backface during sticky layer promotion: ${report.formBackface}.`);
+if (
+  report.formContain !== "content"
+  && (!report.formContain.includes("layout") || !report.formContain.includes("paint"))
+) {
+  failures.push(`Contact form should isolate layout/paint to prevent flicker: ${report.formContain}.`);
+}
+if (stabilityReport.minOpacity < 0.98) failures.push(`Contact form opacity should stay stable after settling: ${stabilityReport.minOpacity}.`);
+if (stabilityReport.topDrift > 1 || stabilityReport.leftDrift > 1) {
+  failures.push(`Contact form should not drift after settling: top=${stabilityReport.topDrift.toFixed(2)}, left=${stabilityReport.leftDrift.toFixed(2)}.`);
+}
 
 if (failures.length > 0) {
-  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify(report, null, 2)}`);
+  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, stabilityReport }, null, 2)}`);
 }
 
 console.log(`Contact form passed: ${report.fieldCount} fields at ${report.formLeft}-${report.formRight}.`);

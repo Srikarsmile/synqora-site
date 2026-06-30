@@ -247,6 +247,12 @@ function DepthMotionField({ align, tone }) {
         <span className="depth-motion-node depth-motion-node-one" />
         <span className="depth-motion-node depth-motion-node-two" />
       </div>
+      <div className="depth-thread-field">
+        <span className="depth-thread-line depth-thread-line-one" />
+        <span className="depth-thread-line depth-thread-line-two" />
+        <span className="depth-thread-line depth-thread-line-three" />
+        <span className="depth-thread-line depth-thread-line-four" />
+      </div>
     </div>
   );
 }
@@ -311,6 +317,7 @@ function DepthScrollController({ panelCount }) {
         const distance = index - scrollCurrent;
         const absDistance = Math.min(2, Math.abs(distance));
         const isRenderable = Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
+        const stableDepth = panel.dataset.depthStable === "true";
         const cache = panelStyleCaches[index];
         const style = panel.style;
 
@@ -333,11 +340,16 @@ function DepthScrollController({ panelCount }) {
 
         const closeDistance = Math.min(1, absDistance);
         const presence = clamp(1 - closeDistance * 0.9, 0, 1);
-        const copyOpacity = clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
-        const depthScale = 1 - Math.min(absDistance * 0.065, 0.13);
-        const copyY = distance * 46 - velocity * 112;
-        const depthZ = -absDistance * 190;
-        const layer = 100 + panels.length - Math.round(absDistance * 16);
+        const copyOpacity = stableDepth
+          ? clamp(1 - Math.max(0, absDistance - 0.16) * 1.05, 0, 1)
+          : clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
+        const depthScale = 1 - Math.min(absDistance * (stableDepth ? 0.035 : 0.065), stableDepth ? 0.07 : 0.13);
+        const copyY = stableDepth ? distance * 18 - velocity * 28 : distance * 46 - velocity * 112;
+        const depthZ = -absDistance * (stableDepth ? 70 : 190);
+        const layer = stableDepth && activeIndex === index
+          ? 130
+          : 100 + panels.length - Math.round(absDistance * 16);
+        const fieldY = stableDepth ? distance * 14 - velocity * 46 : distance * 30 - velocity * 150;
 
         setCachedProperty(style, cache, "--screen-distance", distance.toFixed(3));
         setCachedProperty(style, cache, "--screen-copy-opacity", copyOpacity.toFixed(3));
@@ -347,8 +359,8 @@ function DepthScrollController({ panelCount }) {
         setCachedProperty(style, cache, "--screen-layer", String(layer));
         setCachedProperty(style, cache, "--screen-gradient-opacity", (0.28 + presence * 0.2 + velocityIntensity * 0.08).toFixed(3));
         setCachedProperty(style, cache, "--screen-ambient-opacity", (0.32 + presence * 0.24).toFixed(3));
-        setCachedProperty(style, cache, "--depth-field-opacity", (0.3 + presence * 0.44).toFixed(3));
-        setCachedProperty(style, cache, "--depth-field-y", `${(distance * 30 - velocity * 150).toFixed(1)}px`);
+        setCachedProperty(style, cache, "--depth-field-opacity", (0.3 + presence * (stableDepth ? 0.54 : 0.44)).toFixed(3));
+        setCachedProperty(style, cache, "--depth-field-y", `${fieldY.toFixed(1)}px`);
       });
     };
 
@@ -415,6 +427,7 @@ function TextScreen({ screen, index }) {
     <section
       className={`text-screen screen-gradient screen-gradient-${screen.tone}`}
       data-align={screen.align}
+      data-depth-stable={screen.id === "contact" ? "true" : undefined}
       id={screen.id}
       aria-labelledby={titleId}
     >

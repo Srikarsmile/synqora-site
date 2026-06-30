@@ -14,6 +14,9 @@ const staticFailures = [];
   "depth-motion-plane",
   "depth-motion-orbit",
   "depth-motion-node",
+  "depth-thread-field",
+  "depth-thread-line",
+  "depth-thread-glide",
   "perspective:",
   "rotateX",
   "translate3d",
@@ -60,12 +63,15 @@ const report = await page.evaluate(() => {
     screens: screens.map((screen) => {
       const field = screen.querySelector(".depth-motion-field");
       const planes = field ? [...field.querySelectorAll(".depth-motion-plane")] : [];
+      const threads = field ? [...field.querySelectorAll(".depth-thread-line")] : [];
       const fieldStyle = field ? getComputedStyle(field) : null;
       return {
         align: screen.getAttribute("data-align"),
         field: Boolean(field),
         perspective: fieldStyle?.perspective ?? "",
         planeCount: planes.length,
+        threadCount: threads.length,
+        threadOpacity: threads[0] ? getComputedStyle(threads[0]).opacity : "",
         sampleTransform: planes[0] ? getComputedStyle(planes[0]).transform : "",
         title: screen.querySelector(".screen-title")?.textContent?.trim() ?? "",
       };
@@ -85,6 +91,8 @@ if (report.hasImages) failures.push("Depth motion field should not reintroduce i
 report.screens.forEach((screen, index) => {
   if (!screen.field) failures.push(`Screen ${index + 1} is missing a depth field.`);
   if (screen.planeCount < 3) failures.push(`Screen ${index + 1} needs at least 3 depth planes, found ${screen.planeCount}.`);
+  if (screen.threadCount < 3) failures.push(`Screen ${index + 1} needs at least 3 depth thread lines, found ${screen.threadCount}.`);
+  if (Number(screen.threadOpacity) <= 0.2) failures.push(`Screen ${index + 1} depth threads are too faint: ${screen.threadOpacity}.`);
   if (!screen.perspective || screen.perspective === "none") failures.push(`Screen ${index + 1} depth field has no perspective.`);
   if (!screen.sampleTransform || screen.sampleTransform === "none") failures.push(`Screen ${index + 1} depth planes are not transformed.`);
 });

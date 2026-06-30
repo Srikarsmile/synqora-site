@@ -242,6 +242,15 @@ body {
   will-change: transform, opacity;
 }
 
+.depth-thread-field {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.72;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
 .depth-motion-field[data-depth-align="left"] {
   --depth-rotate: -10deg;
 }
@@ -269,6 +278,14 @@ body {
 
 .depth-motion-field[data-depth-align="right"] .depth-motion-orbit {
   left: 9vw;
+}
+
+.depth-motion-field[data-depth-align="left"] .depth-thread-field {
+  transform: translate3d(20vw, 0, 0) rotateZ(-2deg);
+}
+
+.depth-motion-field[data-depth-align="right"] .depth-thread-field {
+  transform: translate3d(-20vw, 0, 0) rotateZ(2deg);
 }
 
 .depth-motion-plane,
@@ -324,27 +341,97 @@ body {
 }
 
 .depth-motion-field[data-depth-tone="services"] {
-  color: rgba(143, 255, 238, 0.72);
+  color: rgba(27, 126, 139, 0.5);
 }
 
 .depth-motion-field[data-depth-tone="method"] {
-  color: rgba(255, 222, 170, 0.74);
+  color: rgba(94, 63, 170, 0.46);
 }
 
 .depth-motion-field[data-depth-tone="examples"] {
-  color: rgba(191, 229, 255, 0.72);
+  color: rgba(48, 104, 158, 0.46);
 }
 
 .depth-motion-field[data-depth-tone="answers"] {
-  color: rgba(217, 255, 190, 0.72);
+  color: rgba(81, 128, 73, 0.48);
 }
 
 .depth-motion-field[data-depth-tone="contact"] {
-  color: rgba(233, 215, 255, 0.74);
+  color: rgba(59, 47, 110, 0.68);
 }
 
 .depth-motion-field[data-depth-tone] .depth-motion-node {
   background: currentColor;
+}
+
+.depth-thread-line {
+  position: absolute;
+  display: block;
+  width: min(54vw, 760px);
+  height: 2px;
+  background:
+    linear-gradient(90deg, transparent 0%, currentColor 18%, rgba(255, 255, 255, 0.92) 50%, currentColor 82%, transparent 100%);
+  opacity: 0.46;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  animation: depth-thread-glide 16s ease-in-out infinite alternate;
+}
+
+.depth-thread-line::before,
+.depth-thread-line::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.depth-thread-line::before {
+  left: 24%;
+}
+
+.depth-thread-line::after {
+  right: 18%;
+}
+
+.depth-thread-line-one {
+  top: 28%;
+  left: 8%;
+  animation-delay: -2s;
+  transform: translate3d(-4%, 0, 220px) rotateX(62deg) rotateZ(-12deg);
+}
+
+.depth-thread-line-two {
+  top: 44%;
+  right: 6%;
+  width: min(48vw, 680px);
+  opacity: 0.38;
+  animation-delay: -7s;
+  transform: translate3d(7%, 0, 130px) rotateX(58deg) rotateZ(9deg);
+}
+
+.depth-thread-line-three {
+  top: 62%;
+  left: 20%;
+  width: min(40vw, 560px);
+  opacity: 0.42;
+  animation-delay: -11s;
+  transform: translate3d(-8%, 0, 70px) rotateX(64deg) rotateZ(18deg);
+}
+
+.depth-thread-line-four {
+  top: 72%;
+  right: 18%;
+  width: min(34vw, 500px);
+  opacity: 0.32;
+  animation-delay: -5s;
+  transform: translate3d(3%, 0, 260px) rotateX(68deg) rotateZ(-24deg);
+}
+
+.depth-motion-field[data-depth-tone="contact"] .depth-thread-line {
+  opacity: 0.55;
 }
 
 .screen-ambient {
@@ -502,13 +589,19 @@ body {
   position: absolute;
   top: 50%;
   left: clamp(32px, 6.4vw, 92px);
-  z-index: 4;
+  z-index: 5;
   display: grid;
   width: min(390px, calc(44vw - 122px));
   gap: 12px;
   color: #111316;
   text-align: left;
-  transform: translateY(-40%);
+  backface-visibility: hidden;
+  contain: layout paint style;
+  isolation: isolate;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) translateY(-40%);
+  transform-style: preserve-3d;
+  will-change: opacity;
 }
 
 .contact-field-row {
@@ -884,6 +977,18 @@ body {
   }
 }
 
+@keyframes depth-thread-glide {
+  from {
+    opacity: 0.54;
+    translate: calc(var(--scroll-drift-x) * -0.18) calc(var(--scroll-drift-y) * 0.1);
+  }
+
+  to {
+    opacity: 0.82;
+    translate: calc(var(--scroll-drift-x) * 0.24) calc(var(--scroll-drift-y) * -0.14);
+  }
+}
+
 @media (max-width: 1100px) {
   .screen-title {
     max-width: 10.4ch;
@@ -952,6 +1057,10 @@ body {
     --depth-rotate: 0deg;
     width: 82vw;
     height: 42vh;
+  }
+
+  .depth-thread-field {
+    display: none;
   }
 
   .screen-copy {
