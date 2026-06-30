@@ -75,6 +75,7 @@ const report = await page.evaluate(() => {
     action: form?.getAttribute("action") ?? "",
     copyLeft: copyRect ? Math.round(copyRect.left) : -1,
     fieldCount: fields.length,
+    firstFieldBackground: firstFieldStyle?.backgroundColor ?? "",
     firstFieldColor: firstFieldStyle?.color ?? "",
     firstFieldRadius: firstFieldStyle?.borderRadius ?? "",
     formAria: form?.getAttribute("aria-label") ?? "",
@@ -155,6 +156,35 @@ const entryReport = await page.evaluate(async () => {
   };
 });
 
+await page.locator("#contact").scrollIntoViewIfNeeded();
+await page.waitForTimeout(900);
+
+const visualStabilityReport = await page.evaluate(() => {
+  const form = document.querySelector("#contact .contact-form");
+  if (!form) return null;
+
+  const rect = form.getBoundingClientRect();
+  return {
+    clip: {
+      height: Math.ceil(rect.height + 24),
+      width: Math.ceil(rect.width + 24),
+      x: Math.max(0, Math.floor(rect.left - 12)),
+      y: Math.max(0, Math.floor(rect.top - 12)),
+    },
+  };
+});
+
+let contactVisualByteDiff = -1;
+if (visualStabilityReport?.clip) {
+  const firstFrame = await page.screenshot({ clip: visualStabilityReport.clip });
+  await page.waitForTimeout(320);
+  const secondFrame = await page.screenshot({ clip: visualStabilityReport.clip });
+  contactVisualByteDiff = 0;
+  for (let index = 0; index < Math.min(firstFrame.length, secondFrame.length); index += 1) {
+    if (firstFrame[index] !== secondFrame[index]) contactVisualByteDiff += 1;
+  }
+}
+
 await browser.close();
 
 const failures = [...staticFailures];
@@ -165,6 +195,10 @@ const colorChannels = (color) => {
 const isDarkText = (color) => {
   const [r, g, b] = colorChannels(color);
   return r < 70 && g < 70 && b < 70;
+};
+const alphaChannel = (color) => {
+  const channels = color.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+  return channels.length >= 4 ? channels[3] : 1;
 };
 
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
@@ -178,6 +212,9 @@ if (!report.trustText.includes("We reply within 24 hours") || !report.trustVisib
   failures.push(`Contact form should show a response-time reassurance: ${JSON.stringify(report)}.`);
 }
 if (!isDarkText(report.firstFieldColor)) failures.push(`Contact form field text should be dark: ${report.firstFieldColor}.`);
+if (alphaChannel(report.firstFieldBackground) < 0.72) {
+  failures.push(`Contact fields should be opaque enough to stop background shimmer: ${report.firstFieldBackground}.`);
+}
 if (parseFloat(report.firstFieldRadius) < 14) failures.push(`Contact fields should have Apple-style rounded corners: ${report.firstFieldRadius}.`);
 if (parseFloat(report.submitRadius) < 18) failures.push(`Submit button should have a soft Apple-style radius: ${report.submitRadius}.`);
 if (report.formLeft < 24 || report.formLeft > report.viewportWidth * 0.2) {
@@ -207,9 +244,12 @@ if (entryReport.minVisibleOpacity < 0.98) {
 if (entryReport.unstableTransforms.length > 0) {
   failures.push(`Contact form transform should stay stable while entering the viewport: ${JSON.stringify(entryReport)}.`);
 }
+if (contactVisualByteDiff > 800) {
+  failures.push(`Contact form crop should not visually flicker while idle: ${contactVisualByteDiff} changed PNG bytes.`);
+}
 
 if (failures.length > 0) {
-  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, stabilityReport, entryReport }, null, 2)}`);
+  throw new Error(`Contact form failed:\n${failures.join("\n")}\n\n${JSON.stringify({ report, stabilityReport, entryReport, contactVisualByteDiff }, null, 2)}`);
 }
 
 console.log(`Contact form passed: ${report.fieldCount} fields at ${report.formLeft}-${report.formRight}.`);
