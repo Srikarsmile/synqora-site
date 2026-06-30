@@ -1,3 +1,35 @@
+@font-face {
+  font-family: "Helvetica Neue Synqora";
+  src: url("/fonts/helvetica-neue/HelveticaNeueRoman.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Helvetica Neue Synqora";
+  src: url("/fonts/helvetica-neue/HelveticaNeueMedium.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Helvetica Neue Synqora";
+  src: url("/fonts/helvetica-neue/HelveticaNeueBold.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "Helvetica Neue Synqora";
+  src: url("/fonts/helvetica-neue/HelveticaNeueHeavy.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 800;
+}
+
 :root {
   color-scheme: light;
   --ink: rgba(255, 255, 255, 0.96);
@@ -5,8 +37,8 @@
   --quiet: rgba(255, 255, 255, 0.72);
   --paper: #d8b39e;
   --footer-paper: #fff;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Arial, sans-serif;
+  --font-body: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
   --screen-height: 100svh;
   --screen-fill-height: 100svh;
   --scroll-progress: 0;
