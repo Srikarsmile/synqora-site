@@ -336,6 +336,136 @@ function DepthMotionField({ align, tone }) {
   );
 }
 
+function DepthAtmosphereController() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const desktopQuery = window.matchMedia?.("(min-width: 761px)");
+    const fields = [...document.querySelectorAll(".text-screen:not(#contact) .depth-motion-field")]
+      .map((field) => ({
+        align: field.getAttribute("data-depth-align") ?? "center",
+        field,
+        section: field.closest(".text-screen"),
+        height: 1,
+        top: 0,
+      }))
+      .filter((entry) => entry.section);
+
+    if (fields.length === 0) return undefined;
+
+    let frame = 0;
+    let enabled = false;
+    let viewportHeight = Math.max(window.innerHeight, 1);
+    let targetScroll = window.scrollY;
+    let currentScroll = targetScroll;
+    let previousScroll = currentScroll;
+    let velocity = 0;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (from, to, amount) => from + (to - from) * amount;
+    const prefersReducedMotion = () => reducedMotionQuery?.matches ?? false;
+    const prefersDesktopDepth = () => desktopQuery?.matches ?? true;
+
+    const clearFieldStyles = () => {
+      fields.forEach(({ field }) => {
+        field.style.removeProperty("opacity");
+        field.style.removeProperty("transform");
+      });
+    };
+
+    const collectFieldGeometry = () => {
+      viewportHeight = Math.max(window.innerHeight, 1);
+      fields.forEach((entry) => {
+        entry.top = entry.section.offsetTop;
+        entry.height = Math.max(entry.section.offsetHeight, viewportHeight);
+      });
+    };
+
+    const setEnabledState = () => {
+      enabled = prefersDesktopDepth() && !prefersReducedMotion();
+      root.setAttribute("data-depth-atmosphere", enabled ? "active" : "native");
+      collectFieldGeometry();
+
+      if (!enabled) {
+        clearFieldStyles();
+        return;
+      }
+
+      targetScroll = window.scrollY;
+      currentScroll = targetScroll;
+      previousScroll = currentScroll;
+      velocity = 0;
+      scheduleFrame();
+    };
+
+    const render = () => {
+      frame = 0;
+
+      if (!enabled) return;
+
+      targetScroll = window.scrollY;
+      currentScroll = lerp(currentScroll, targetScroll, 0.18);
+      velocity = lerp(velocity, currentScroll - previousScroll, 0.16);
+      previousScroll = currentScroll;
+
+      const normalizedVelocity = clamp(velocity / viewportHeight, -0.9, 0.9);
+
+      fields.forEach(({ align, field, top }) => {
+        const distance = (top - currentScroll) / viewportHeight;
+        const absDistance = Math.abs(distance);
+        const presence = clamp(1 - absDistance * 0.78, 0, 1);
+        const side = align === "right" ? -1 : align === "left" ? 1 : 0.25;
+        const x = clamp((distance * -72 + normalizedVelocity * 64) * side, -90, 90);
+        const y = clamp(distance * -42 + normalizedVelocity * -34, -76, 76);
+        const rotate = clamp(distance * 4 + normalizedVelocity * 10, -10, 10);
+        const scale = 0.96 + presence * 0.06;
+        const opacity = 0.2 + presence * 0.5;
+
+        field.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+        field.style.opacity = opacity.toFixed(3);
+      });
+
+      if (Math.abs(targetScroll - currentScroll) > 0.7 || Math.abs(velocity) > 0.08) {
+        scheduleFrame();
+      }
+    };
+
+    const scheduleFrame = () => {
+      if (frame || !enabled) return;
+      frame = window.requestAnimationFrame(render);
+    };
+
+    const handleScroll = () => {
+      targetScroll = window.scrollY;
+      scheduleFrame();
+    };
+
+    const handleResize = () => {
+      collectFieldGeometry();
+      handleScroll();
+    };
+
+    setEnabledState();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize, { passive: true });
+    reducedMotionQuery?.addEventListener?.("change", setEnabledState);
+    desktopQuery?.addEventListener?.("change", setEnabledState);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      reducedMotionQuery?.removeEventListener?.("change", setEnabledState);
+      desktopQuery?.removeEventListener?.("change", setEnabledState);
+      root.removeAttribute("data-depth-atmosphere");
+      clearFieldStyles();
+    };
+  }, []);
+
+  return null;
+}
+
 function TextScreen({ screen, index }) {
   const titleId = `${screen.id}-title`;
   const Heading = index === 0 ? "h1" : "h2";
@@ -637,6 +767,7 @@ function CrowdFooter() {
 export function App() {
   return (
     <div className="site-shell">
+      <DepthAtmosphereController />
       <header className="site-header">
         <p className="wordmark">Synqora</p>
       </header>

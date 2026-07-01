@@ -33,6 +33,9 @@ const failures = [];
   ".contact-form",
   ".site-crowd-footer",
   "scroll-snap-type: none",
+  "function DepthAtmosphereController",
+  "data-depth-atmosphere",
+  ".depth-motion-field",
 ].forEach((token) => {
   if (!app.includes(token) && !css.includes(token)) {
     failures.push(`Missing native full-screen scroll token: ${token}`);
@@ -57,11 +60,15 @@ await page.waitForTimeout(700);
 const layoutReport = await page.evaluate(() => {
   const screens = [...document.querySelectorAll(".text-screen")];
   const footer = document.querySelector(".site-crowd-footer");
+  const fields = [...document.querySelectorAll(".text-screen:not(#contact) .depth-motion-field")];
 
   return {
+    depthAtmosphere: document.documentElement.dataset.depthAtmosphere ?? "",
+    depthFieldInlineStyles: fields.filter((field) => field.getAttribute("style")).length,
     footerPosition: footer ? getComputedStyle(footer).position : "",
     rootDataset: document.documentElement.dataset.depthScroll ?? "",
     rootSnapType: getComputedStyle(document.documentElement).scrollSnapType,
+    screenInlineStyleCount: screens.filter((screen) => screen.getAttribute("style")).length,
     screenHeights: screens.map((screen) => Math.round(screen.getBoundingClientRect().height)),
     screenPositions: screens.map((screen) => getComputedStyle(screen).position),
     viewportHeight: window.innerHeight,
@@ -112,9 +119,16 @@ await browser.close();
 
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
 if (layoutReport.rootDataset) failures.push(`Root should not expose depth-scroll state: ${layoutReport.rootDataset}.`);
+if (layoutReport.depthAtmosphere !== "active") failures.push(`Decorative depth atmosphere should be active: ${layoutReport.depthAtmosphere}.`);
 if (layoutReport.rootSnapType !== "none") failures.push(`Root scroll snap should stay disabled: ${layoutReport.rootSnapType}.`);
 if (layoutReport.screenPositions.some((position) => position !== "relative")) {
   failures.push(`Text screens should be normal flow sections: ${layoutReport.screenPositions.join(", ")}.`);
+}
+if (layoutReport.screenInlineStyleCount > 0) {
+  failures.push(`Depth atmosphere should not write inline styles on content sections: ${JSON.stringify(layoutReport)}.`);
+}
+if (layoutReport.depthFieldInlineStyles < 1) {
+  failures.push(`Depth atmosphere should animate decorative fields only: ${JSON.stringify(layoutReport)}.`);
 }
 if (layoutReport.screenHeights.some((height) => Math.abs(height - layoutReport.viewportHeight) > 2)) {
   failures.push(`Every text screen should cover one viewport: ${JSON.stringify(layoutReport)}.`);

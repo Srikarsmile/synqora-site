@@ -294,6 +294,10 @@ body {
   transform-style: preserve-3d;
 }
 
+html[data-depth-atmosphere="active"] .depth-motion-field {
+  will-change: transform, opacity;
+}
+
 .depth-thread-field {
   position: absolute;
   inset: 0;

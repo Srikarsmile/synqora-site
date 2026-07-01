@@ -88,14 +88,15 @@ const checks = [
   ["Service screen names concrete offer lanes", app.includes("Websites") && app.includes("AI tools") && app.includes("Automation")],
   ["Contact screen includes a response-time trust cue", app.includes("We reply within 24 hours")],
   [
-    "Sections use native full-screen scroll instead of a custom controller",
+    "Sections use native full-screen scroll with decorative-only depth",
     !app.includes("DepthScrollController")
       && !app.includes("data-depth-scroll-state")
       && !app.includes("Element.prototype.scrollIntoView")
+      && app.includes("function DepthAtmosphereController")
+      && app.includes("data-depth-atmosphere")
       && !css.includes("position: sticky")
       && !css.includes("scroll-snap-align")
       && !app.includes("getBoundingClientRect")
-      && !app.includes("requestAnimationFrame(render)")
       && css.includes("height: var(--screen-height)"),
   ],
   ["No unused hero image preload", !html.includes('rel="preload"') && !html.includes("synqora-hero-nano.webp")],
