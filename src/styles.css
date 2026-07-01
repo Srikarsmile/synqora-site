@@ -302,7 +302,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
   position: absolute;
   inset: 0;
   z-index: 2;
-  opacity: 0.72;
+  opacity: 0.88;
   pointer-events: none;
   transform-style: preserve-3d;
 }
@@ -320,9 +320,9 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
   top: 50%;
   --depth-x: 0px;
   --depth-y: -50%;
-  width: min(41vw, 620px);
-  height: min(54vh, 520px);
-  opacity: 0.6;
+  width: min(48vw, 720px);
+  height: min(62vh, 590px);
+  opacity: 0.86;
   animation: depth-gallery-drift 18s ease-in-out infinite alternate;
   transform-style: preserve-3d;
   will-change: transform;
@@ -348,10 +348,13 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 .depth-motion-node {
   position: absolute;
   display: block;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
-    radial-gradient(circle at 28% 26%, rgba(250, 255, 190, 0.14), transparent 46%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06)),
+    radial-gradient(circle at 28% 26%, rgba(250, 255, 190, 0.2), transparent 48%);
+  box-shadow:
+    0 28px 90px rgba(36, 29, 40, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transform-style: preserve-3d;
 }
 
@@ -361,19 +364,19 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 
 .depth-motion-plane-primary {
   inset: 8% 10% 12% 12%;
-  opacity: 0.55;
+  opacity: 0.72;
   transform: translate3d(0, 0, 90px) rotateX(0deg) rotateY(-10deg);
 }
 
 .depth-motion-plane-secondary {
   inset: 26% 2% 22% 34%;
-  opacity: 0.42;
+  opacity: 0.58;
   transform: translate3d(28px, -18px, 185px) rotateX(0deg) rotateY(14deg);
 }
 
 .depth-motion-plane-tertiary {
   inset: 50% 34% 8% 0;
-  opacity: 0.34;
+  opacity: 0.48;
   transform: translate3d(-22px, 28px, 35px) rotateX(0deg) rotateY(-18deg);
 }
 
@@ -951,27 +954,27 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 
 .crowd-footer-copy {
   position: absolute;
-  top: clamp(76px, 12svh, 124px);
+  top: clamp(72px, 10svh, 108px);
   left: 50%;
   z-index: 2;
   display: grid;
   width: min(880px, calc(100% - 40px));
   justify-items: center;
-  gap: 0;
+  gap: clamp(14px, 2.2svh, 24px);
   text-align: center;
   transform: translateX(-50%);
 }
 
 .crowd-footer-title {
   display: grid;
-  row-gap: clamp(8px, 1.2svh, 14px);
-  max-width: 12ch;
+  row-gap: clamp(5px, 0.95svh, 9px);
+  max-width: 13ch;
   margin: 0;
   font-family: var(--font-display);
-  font-size: 7.1rem;
+  font-size: clamp(4.9rem, 10.8svh, 6.1rem);
   font-weight: 300;
   letter-spacing: 0;
-  line-height: 0.9;
+  line-height: 0.84;
   text-wrap: balance;
 }
 
@@ -982,7 +985,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 .crowd-footer-email {
   position: absolute;
   right: 28px;
-  bottom: calc(min(22svh, 240px) + 22px);
+  bottom: calc(min(22svh, 240px) + clamp(28px, 4svh, 48px));
   left: 28px;
   z-index: 3;
   margin: 0;
@@ -1014,25 +1017,25 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 
 @keyframes depth-gallery-drift {
   from {
-    opacity: 0.5;
-    transform: translate3d(var(--depth-x), calc(var(--depth-y) + 12px), -34px) rotateX(60deg) rotateZ(calc(var(--depth-rotate, 0deg) - 1.5deg)) scale(0.98);
+    opacity: 0.76;
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) + 18px), -64px) rotateX(62deg) rotateZ(calc(var(--depth-rotate, 0deg) - 2.6deg)) scale(0.96);
   }
 
   to {
-    opacity: 0.68;
-    transform: translate3d(var(--depth-x), calc(var(--depth-y) - 10px), 34px) rotateX(56deg) rotateZ(calc(var(--depth-rotate, 0deg) + 1.5deg)) scale(1.02);
+    opacity: 0.94;
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) - 18px), 72px) rotateX(55deg) rotateZ(calc(var(--depth-rotate, 0deg) + 2.6deg)) scale(1.045);
   }
 }
 
 @keyframes depth-thread-glide {
   from {
-    opacity: 0.54;
-    translate: -8px 2px;
+    opacity: 0.68;
+    translate: -14px 4px;
   }
 
   to {
-    opacity: 0.82;
-    translate: 8px -3px;
+    opacity: 0.96;
+    translate: 14px -5px;
   }
 }
 
@@ -1382,7 +1385,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
   }
 
   .crowd-footer-title {
-    font-size: 2.92rem;
+    font-size: 2.94rem;
   }
 }
 

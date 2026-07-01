@@ -65,6 +65,9 @@ const layoutReport = await page.evaluate(() => {
   return {
     depthAtmosphere: document.documentElement.dataset.depthAtmosphere ?? "",
     depthFieldInlineStyles: fields.filter((field) => field.getAttribute("style")).length,
+    depthMaxOpacity: Math.max(...fields.map((field) => Number.parseFloat(getComputedStyle(field).opacity) || 0)),
+    depthOrbitOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".depth-motion-orbit")).opacity) || 0,
+    depthThreadOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".depth-thread-field")).opacity) || 0,
     footerPosition: footer ? getComputedStyle(footer).position : "",
     rootDataset: document.documentElement.dataset.depthScroll ?? "",
     rootSnapType: getComputedStyle(document.documentElement).scrollSnapType,
@@ -129,6 +132,9 @@ if (layoutReport.screenInlineStyleCount > 0) {
 }
 if (layoutReport.depthFieldInlineStyles < 1) {
   failures.push(`Depth atmosphere should animate decorative fields only: ${JSON.stringify(layoutReport)}.`);
+}
+if (layoutReport.depthMaxOpacity < 0.82 || layoutReport.depthOrbitOpacity < 0.72 || layoutReport.depthThreadOpacity < 0.82) {
+  failures.push(`Decorative depth should be visible enough to read as depth, not a flat gradient: ${JSON.stringify(layoutReport)}.`);
 }
 if (layoutReport.screenHeights.some((height) => Math.abs(height - layoutReport.viewportHeight) > 2)) {
   failures.push(`Every text screen should cover one viewport: ${JSON.stringify(layoutReport)}.`);

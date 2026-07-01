@@ -413,13 +413,13 @@ function DepthAtmosphereController() {
       fields.forEach(({ align, field, top }) => {
         const distance = (top - currentScroll) / viewportHeight;
         const absDistance = Math.abs(distance);
-        const presence = clamp(1 - absDistance * 0.78, 0, 1);
+        const presence = clamp(1 - absDistance * 0.62, 0, 1);
         const side = align === "right" ? -1 : align === "left" ? 1 : 0.25;
-        const x = clamp((distance * -72 + normalizedVelocity * 64) * side, -90, 90);
-        const y = clamp(distance * -42 + normalizedVelocity * -34, -76, 76);
-        const rotate = clamp(distance * 4 + normalizedVelocity * 10, -10, 10);
-        const scale = 0.96 + presence * 0.06;
-        const opacity = 0.2 + presence * 0.5;
+        const x = clamp((distance * -112 + normalizedVelocity * 98) * side, -138, 138);
+        const y = clamp(distance * -68 + normalizedVelocity * -52, -108, 108);
+        const rotate = clamp(distance * 7 + normalizedVelocity * 14, -14, 14);
+        const scale = 0.94 + presence * 0.09;
+        const opacity = 0.32 + presence * 0.6;
 
         field.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
         field.style.opacity = opacity.toFixed(3);

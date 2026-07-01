@@ -203,8 +203,11 @@ if (footerReport.titleLines.join(" ") !== "Stay extraordinary. Don't be the same
 if (footerReport.titleLines.length !== 4 || footerReport.titleWeight !== "300") {
   failures.push(`Footer should use a four-line Helvetica Neue Light lockup: ${JSON.stringify(footerReport)}.`);
 }
-if (!footerReport.title || footerReport.title.height < 390 || footerReport.title.width < 640) {
-  failures.push(`Desktop footer headline should feel full, not small: ${JSON.stringify(footerReport.title)}.`);
+if (!footerReport.title || footerReport.title.height < 300 || footerReport.title.height > 380 || footerReport.title.width < 560) {
+  failures.push(`Desktop footer headline should feel full without squeezing the email: ${JSON.stringify(footerReport.title)}.`);
+}
+if (footerReport.title && footerReport.email && footerReport.email.top - footerReport.title.bottom < 18) {
+  failures.push(`Footer email needs a clear gap below the headline: ${JSON.stringify(footerReport)}.`);
 }
 if (footerReport.email && footerReport.crowd && footerReport.email.bottom > footerReport.crowd.top - 18) {
   failures.push(`Footer email should remain readable above the people band: ${JSON.stringify(footerReport)}.`);
