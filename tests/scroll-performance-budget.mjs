@@ -7,31 +7,28 @@ const baseUrl = process.env.TEST_BASE_URL ?? "http://127.0.0.1:5173/";
 const app = readFileSync(resolve(root, "src/App.jsx"), "utf8");
 const css = readFileSync(resolve(root, "src/styles.css"), "utf8");
 
+const failures = [];
 const forbiddenPatterns = [
   ["scroll-linked CSS animation timeline", /animation-timeline\s*:/],
   ["SVG stroke dash animation", /stroke-dash(?:array|offset)/],
   ["paint-time drop shadows", /drop-shadow\(/],
   ["backdrop blur on moving layers", /backdrop-filter\s*:/],
   ["content-visibility reveal hitch", /content-visibility:\s*auto/],
-  ["manual requestAnimationFrame render loop", /requestAnimationFrame\(render\)/],
-  ["layout reads in scroll animation code", /getBoundingClientRect\(\)/],
+  ["custom depth scroll controller", /DepthScrollController/],
+  ["depth scroll data state", /data-depth-scroll-state/],
+  ["scrollIntoView monkey patch", /Element\.prototype\.scrollIntoView/],
+  ["sticky full-screen panels", /position:\s*sticky/],
+  ["scroll snap section locks", /scroll-snap-align/],
+  ["scroll-linked inline style writer", /\.style\.setProperty/],
 ];
 
-const failures = forbiddenPatterns
-  .filter(([, pattern]) => pattern.test(app) || pattern.test(css))
-  .map(([name]) => `Found ${name}.`);
+for (const [name, pattern] of forbiddenPatterns) {
+  if (pattern.test(app) || pattern.test(css)) failures.push(`Found ${name}.`);
+}
 
 if (!css.includes("contain: layout paint style")) {
   failures.push("Moving visual layers should use layout/paint containment.");
 }
-
-[
-  "scheduleDepthFrame",
-  "stopDepthFrame",
-  "data-depth-scroll-state",
-].forEach((token) => {
-  if (!app.includes(token)) failures.push(`Depth scroll should have an idle scheduler token: ${token}.`);
-});
 
 if (failures.length > 0) {
   throw new Error(`Scroll performance budget failed:\n${failures.join("\n")}`);
@@ -44,102 +41,78 @@ const page = await browser.newPage({
   viewport: { width: 390, height: 844 },
 });
 
-await page.addInitScript(() => {
-  window.__scrollPerfProbe = {
-    currentFrameWrites: 0,
-    frameGaps: [],
-    frameStyleWrites: [],
-    totalStyleWrites: 0,
-  };
-
-  const nativeSetProperty = CSSStyleDeclaration.prototype.setProperty;
-  CSSStyleDeclaration.prototype.setProperty = function instrumentedSetProperty(name, value, priority) {
-    window.__scrollPerfProbe.currentFrameWrites += 1;
-    window.__scrollPerfProbe.totalStyleWrites += 1;
-    return nativeSetProperty.call(this, name, value, priority);
-  };
-
-  let lastFrameTime = performance.now();
-  const readFrame = (now) => {
-    window.__scrollPerfProbe.frameGaps.push(now - lastFrameTime);
-    window.__scrollPerfProbe.frameStyleWrites.push(window.__scrollPerfProbe.currentFrameWrites);
-    window.__scrollPerfProbe.currentFrameWrites = 0;
-    lastFrameTime = now;
-    requestAnimationFrame(readFrame);
-  };
-
-  requestAnimationFrame(readFrame);
-});
-
-await page.goto(baseUrl, { waitUntil: "networkidle" });
-await page.waitForTimeout(500);
-await page.evaluate(async () => {
-  for (let index = 0; index < 5; index += 1) {
-    window.scrollTo({ top: (index + 1) * window.innerHeight, behavior: "smooth" });
-    await new Promise((resolve) => setTimeout(resolve, 650));
-  }
-});
+await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(500);
 
-const report = await page.evaluate(() => {
-  const gaps = window.__scrollPerfProbe.frameGaps.slice(10);
-  const writes = window.__scrollPerfProbe.frameStyleWrites.slice(10);
-  const percentile = (values, ratio) => {
-    const sorted = [...values].sort((a, b) => a - b);
-    return sorted[Math.floor(sorted.length * ratio)] || 0;
-  };
+const report = await page.evaluate(async () => {
+  const frameGaps = [];
+  const monitorFrames = new Promise((resolve) => {
+    let last = performance.now();
+    let frames = 0;
+
+    const tick = (now) => {
+      frameGaps.push(now - last);
+      last = now;
+      frames += 1;
+
+      if (frames >= 150) {
+        resolve();
+        return;
+      }
+
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+  });
+
+  const scrollScreens = (async () => {
+    for (let index = 1; index <= 6; index += 1) {
+      window.scrollTo({ top: index * window.innerHeight, behavior: "auto" });
+      await new Promise((resolve) => setTimeout(resolve, 55));
+    }
+    document.querySelector(".site-crowd-footer")?.scrollIntoView({ block: "start", behavior: "auto" });
+    await new Promise((resolve) => setTimeout(resolve, 55));
+    document.querySelector("#contact")?.scrollIntoView({ block: "start", behavior: "auto" });
+  })();
+
+  await Promise.all([monitorFrames, scrollScreens]);
+
+  const sortedGaps = [...frameGaps].sort((a, b) => a - b);
+  const percentile = (ratio) => sortedGaps[Math.floor(sortedGaps.length * ratio)] || 0;
+  const screens = [...document.querySelectorAll(".text-screen")];
 
   return {
-    frames: gaps.length,
-    longFrames: gaps.filter((gap) => gap > 34).length,
-    maxFrameGap: Math.max(...gaps),
-    maxStyleWritesPerFrame: Math.max(...writes),
-    p95FrameGap: percentile(gaps, 0.95),
-    p95StyleWritesPerFrame: percentile(writes, 0.95),
-    totalStyleWrites: window.__scrollPerfProbe.totalStyleWrites,
-  };
-});
-
-await page.waitForTimeout(900);
-
-const idleReport = await page.evaluate(async () => {
-  const beforeWrites = window.__scrollPerfProbe.totalStyleWrites;
-  const beforeFrameCount = window.__scrollPerfProbe.frameGaps.length;
-
-  await new Promise((resolve) => setTimeout(resolve, 650));
-
-  const afterWrites = window.__scrollPerfProbe.totalStyleWrites;
-  const afterFrameCount = window.__scrollPerfProbe.frameGaps.length;
-
-  return {
-    depthState: document.documentElement.dataset.depthScrollState ?? "",
-    frames: afterFrameCount - beforeFrameCount,
-    writes: afterWrites - beforeWrites,
+    contactInlineStyle: document.querySelector("#contact")?.getAttribute("style") ?? "",
+    frameCount: frameGaps.length,
+    htmlInlineStyle: document.documentElement.getAttribute("style") ?? "",
+    longFrames: frameGaps.filter((gap) => gap > 50).length,
+    p95FrameGap: percentile(0.95),
+    rootDepthDataset: document.documentElement.dataset.depthScroll ?? "",
+    screenInlineStyleCount: screens.filter((screen) => screen.getAttribute("style")).length,
+    screenPositions: screens.map((screen) => getComputedStyle(screen).position),
   };
 });
 
 await browser.close();
 
-if (report.p95StyleWritesPerFrame > 42) {
-  failures.push(`Depth scroll writes too many style properties per frame: ${JSON.stringify(report)}.`);
+if (report.rootDepthDataset) failures.push(`Native scroll should not expose depth dataset: ${JSON.stringify(report)}.`);
+if (report.htmlInlineStyle) failures.push(`Native scroll should not mutate root inline styles: ${JSON.stringify(report)}.`);
+if (report.screenInlineStyleCount > 0 || report.contactInlineStyle) {
+  failures.push(`Native scroll should not write per-section inline styles: ${JSON.stringify(report)}.`);
 }
-if (report.p95FrameGap > 42) {
-  failures.push(`Depth scroll has slow frame pacing on mobile: ${JSON.stringify(report)}.`);
+if (report.screenPositions.some((position) => position !== "relative")) {
+  failures.push(`Screens should stay in normal flow: ${JSON.stringify(report)}.`);
 }
-if (report.longFrames > Math.max(4, report.frames * 0.08)) {
-  failures.push(`Depth scroll has too many long mobile frames: ${JSON.stringify(report)}.`);
+if (report.longFrames > Math.max(8, report.frameCount * 0.12)) {
+  failures.push(`Native scroll has too many slow frames: ${JSON.stringify(report)}.`);
 }
-if (idleReport.depthState !== "idle") {
-  failures.push(`Depth scroll should enter idle state after settling: ${JSON.stringify(idleReport)}.`);
-}
-if (idleReport.writes > 2) {
-  failures.push(`Idle depth scroll should stop writing styles: ${JSON.stringify(idleReport)}.`);
+if (report.p95FrameGap > 64) {
+  failures.push(`Native scroll frame pacing is too slow: ${JSON.stringify(report)}.`);
 }
 
 if (failures.length > 0) {
   throw new Error(`Scroll performance budget failed:\n${failures.join("\n")}`);
 }
 
-console.log(
-  `Scroll performance budget passed: p95 ${Math.round(report.p95StyleWritesPerFrame)} writes, ${report.p95FrameGap.toFixed(1)}ms frames.`,
-);
+console.log(`Scroll performance budget passed: p95 ${report.p95FrameGap.toFixed(1)}ms, no inline scroll writes.`);

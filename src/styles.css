@@ -49,14 +49,6 @@
   --font-body: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
   --screen-height: 100svh;
   --screen-fill-height: 100svh;
-  --scroll-progress: 0;
-  --scroll-velocity: 0;
-  --scroll-intensity: 0;
-  --scroll-drift-x: 0px;
-  --scroll-drift-y: 0px;
-  --depth-scroll-target: 0;
-  --depth-scroll-current: 0;
-  --depth-active-index: 0;
 }
 
 @supports (height: 100dvh) {
@@ -145,25 +137,14 @@ body {
 }
 
 .text-screen {
-  --screen-distance: 0;
-  --screen-abs-distance: 0;
-  --depth-presence: 1;
-  --screen-copy-opacity: 1;
-  --screen-copy-y: 0px;
-  --screen-copy-scale: 1;
-  --screen-depth-z: 0px;
-  --screen-layer: 1;
   --screen-gradient-opacity: 0.44;
   --screen-ambient-opacity: 0.58;
   --depth-field-opacity: 0.6;
-  --depth-field-y: 0px;
   --screen-title-size: 5.8rem;
   --screen-title-measure: 9.2ch;
   --screen-title-line: 0.92;
   position: relative;
-  position: sticky;
-  top: 0;
-  z-index: var(--screen-layer);
+  z-index: 1;
   display: grid;
   height: var(--screen-height);
   min-height: var(--screen-height);
@@ -175,11 +156,6 @@ body {
   background-image: var(--screen-gradient);
   background-size: 100% 100%;
   text-align: center;
-  transform-style: preserve-3d;
-  perspective: 1200px;
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
-  will-change: transform;
 }
 
 .text-screen[data-align="left"] {
@@ -223,8 +199,7 @@ body {
     radial-gradient(42% 48% at 78% 24%, rgba(255, 255, 255, 0.2), transparent 72%),
     radial-gradient(48% 42% at 52% 82%, rgba(255, 255, 255, 0.18), transparent 70%);
   opacity: var(--screen-gradient-opacity);
-  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0) scale(1.05);
-  will-change: transform, opacity;
+  transform: scale(1.05);
   pointer-events: none;
 }
 
@@ -316,9 +291,7 @@ body {
   opacity: var(--depth-field-opacity);
   perspective: 1100px;
   pointer-events: none;
-  transform: translate3d(0, var(--depth-field-y), 0);
   transform-style: preserve-3d;
-  will-change: transform, opacity;
 }
 
 .depth-thread-field {
@@ -510,18 +483,6 @@ body {
   transform: translate3d(3%, 0, 260px) rotateX(68deg) rotateZ(-24deg);
 }
 
-.depth-motion-orbit,
-.depth-thread-line {
-  animation-play-state: running;
-}
-
-html[data-depth-scroll-state="scrolling"] .depth-motion-orbit,
-html[data-depth-scroll-state="scrolling"] .depth-thread-line,
-html[data-depth-scroll-state="settling"] .depth-motion-orbit,
-html[data-depth-scroll-state="settling"] .depth-thread-line {
-  animation-play-state: paused;
-}
-
 .depth-motion-field[data-depth-tone="contact"] .depth-thread-line {
   opacity: 0.55;
 }
@@ -532,8 +493,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
     radial-gradient(68% 72% at 42% 82%, rgba(255, 255, 255, 0.2), transparent 68%),
     linear-gradient(180deg, rgba(24, 20, 17, 0.1), rgba(24, 20, 17, 0.3));
   opacity: var(--screen-ambient-opacity);
-  transform: translate3d(var(--scroll-drift-x), var(--scroll-drift-y), 0);
-  will-change: transform;
   pointer-events: none;
 }
 
@@ -585,10 +544,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   justify-items: center;
   width: min(1100px, 100%);
   gap: 22px;
-  opacity: var(--screen-copy-opacity);
-  transform: translate3d(0, var(--screen-copy-y), var(--screen-depth-z)) scale(var(--screen-copy-scale));
-  transform-origin: 50% 54%;
-  will-change: transform, opacity;
 }
 
 .text-screen[data-align="left"] .screen-copy {
@@ -668,10 +623,8 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   box-shadow:
     0 38px 94px rgba(36, 29, 40, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  opacity: var(--screen-copy-opacity);
-  transform: translate3d(0, calc(-50% + var(--screen-copy-y)), var(--screen-depth-z)) scale(var(--screen-copy-scale));
+  transform: translateY(-50%);
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-  will-change: transform, opacity;
 }
 
 .text-screen[data-screen-kind="work"][data-align="left"] .selected-work-preview {
@@ -987,8 +940,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   min-height: var(--screen-height);
   overflow: hidden;
   contain: layout paint style;
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
   background: var(--footer-paper);
   background-image: none;
   color: #111316;
@@ -1060,24 +1011,24 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 @keyframes depth-gallery-drift {
   from {
     opacity: 0.5;
-    transform: translate3d(calc(var(--depth-x) + var(--scroll-drift-x)), calc(var(--depth-y) + 12px + var(--scroll-drift-y)), -34px) rotateX(60deg) rotateZ(calc(var(--depth-rotate, 0deg) - 1.5deg)) scale(0.98);
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) + 12px), -34px) rotateX(60deg) rotateZ(calc(var(--depth-rotate, 0deg) - 1.5deg)) scale(0.98);
   }
 
   to {
     opacity: 0.68;
-    transform: translate3d(calc(var(--depth-x) + var(--scroll-drift-x)), calc(var(--depth-y) - 10px + var(--scroll-drift-y)), 34px) rotateX(56deg) rotateZ(calc(var(--depth-rotate, 0deg) + 1.5deg)) scale(1.02);
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) - 10px), 34px) rotateX(56deg) rotateZ(calc(var(--depth-rotate, 0deg) + 1.5deg)) scale(1.02);
   }
 }
 
 @keyframes depth-thread-glide {
   from {
     opacity: 0.54;
-    translate: calc(var(--scroll-drift-x) * -0.18) calc(var(--scroll-drift-y) * 0.1);
+    translate: -8px 2px;
   }
 
   to {
     opacity: 0.82;
-    translate: calc(var(--scroll-drift-x) * 0.24) calc(var(--scroll-drift-y) * -0.14);
+    translate: 8px -3px;
   }
 }
 
@@ -1366,13 +1317,6 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   .site-crowd-footer {
     height: var(--screen-height);
     min-height: var(--screen-height);
-    scroll-snap-align: none;
-    scroll-snap-stop: normal;
-  }
-
-  .text-screen {
-    scroll-snap-align: none;
-    scroll-snap-stop: normal;
   }
 
   .crowd-footer-copy {

@@ -22,7 +22,6 @@ const staticFailures = [];
   "We reply within 24 hours",
   "contact-trust",
   "mailto:info@synqora.tech",
-  "data-depth-stable",
   "backface-visibility: hidden",
 ].forEach((token) => {
   if (!app.includes(token) && !css.includes(token)) {
@@ -91,7 +90,6 @@ const report = await page.evaluate(() => {
     trustText: trust?.textContent?.trim() ?? "",
     trustVisible: Boolean(trustRect && trustRect.width > 40 && trustRect.height > 12),
     submitRadius: submitStyle?.borderRadius ?? "",
-    stableDepth: contact?.getAttribute("data-depth-stable") ?? "",
     formBackface: form ? getComputedStyle(form).backfaceVisibility : "",
     formContain: form ? getComputedStyle(form).contain : "",
     viewportWidth: window.innerWidth,
@@ -136,9 +134,10 @@ const entryReport = await page.evaluate(async () => {
     };
   }
 
-  window.scrollTo({ top: window.innerHeight * 4, behavior: "auto" });
+  const footer = document.querySelector(".site-crowd-footer");
+  footer?.scrollIntoView({ block: "start", behavior: "auto" });
   await new Promise((resolve) => setTimeout(resolve, 260));
-  window.scrollTo({ top: window.innerHeight * 5, behavior: "smooth" });
+  contact.scrollIntoView({ block: "start", behavior: "smooth" });
 
   const samples = [];
   for (let index = 0; index < 72; index += 1) {
@@ -164,6 +163,7 @@ const entryReport = await page.evaluate(async () => {
     ? `${samples[0].gradientOpacity}|${samples[0].ambientOpacity}|${samples[0].depthOpacity}`
     : "";
   return {
+    sampleCount: samples.length,
     visibleSamples: samples.slice(0, 8),
     minVisibleOpacity: Math.min(...samples.map((sample) => sample.opacity)),
     unstableBackdropVariables: samples
@@ -254,8 +254,7 @@ if (report.formPosition !== "relative" || report.formTransform !== "none") {
   failures.push(`Contact form should be a stable grid item, not an absolute translated overlay: ${report.formPosition}, ${report.formTransform}.`);
 }
 if (report.visibleEmailCount !== 0) failures.push(`Contact screen should not show the email beside the form: ${report.visibleEmailCount}.`);
-if (report.stableDepth !== "true") failures.push(`Contact screen should opt into stable depth rendering: ${report.stableDepth}.`);
-if (report.formBackface !== "hidden") failures.push(`Contact form should hide backface during sticky layer promotion: ${report.formBackface}.`);
+if (report.formBackface !== "hidden") failures.push(`Contact form should hide backface during compositing: ${report.formBackface}.`);
 if (
   report.formContain !== "content"
   && (!report.formContain.includes("layout") || !report.formContain.includes("paint"))
@@ -265,6 +264,9 @@ if (
 if (stabilityReport.minOpacity < 0.98) failures.push(`Contact form opacity should stay stable after settling: ${stabilityReport.minOpacity}.`);
 if (stabilityReport.topDrift > 1 || stabilityReport.leftDrift > 1) {
   failures.push(`Contact form should not drift after settling: top=${stabilityReport.topDrift.toFixed(2)}, left=${stabilityReport.leftDrift.toFixed(2)}.`);
+}
+if (entryReport.sampleCount < 8) {
+  failures.push(`Contact form should be visible while entering from the footer: ${JSON.stringify(entryReport)}.`);
 }
 if (entryReport.minVisibleOpacity < 0.98) {
   failures.push(`Contact form should not fade in while entering the viewport: ${JSON.stringify(entryReport)}.`);

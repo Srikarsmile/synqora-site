@@ -6,40 +6,36 @@ const root = resolve(import.meta.dirname, "..");
 const baseUrl = process.env.TEST_BASE_URL ?? "http://127.0.0.1:5173/";
 const app = readFileSync(resolve(root, "src/App.jsx"), "utf8");
 const css = readFileSync(resolve(root, "src/styles.css"), "utf8");
-const pkg = readFileSync(resolve(root, "package.json"), "utf8");
 
-const staticFailures = [];
+const failures = [];
+
 [
   "function DepthScrollController",
+  "data-depth-scroll",
+  "Element.prototype.scrollIntoView",
   "scrollTarget",
   "scrollCurrent",
   "velocityDamping",
-  "data-depth-scroll",
-  "--scroll-progress",
-  "--scroll-velocity",
-  "--depth-scroll-current",
-  "--depth-active-index",
-  "--scroll-drift-x",
-  "--scroll-drift-y",
-  "--screen-distance",
   "--screen-copy-opacity",
+  "--screen-distance",
+  "--depth-scroll-current",
   "position: sticky",
-  "transform-style: preserve-3d",
-  "scroll-snap-align: start",
-  "scroll-snap-stop: normal",
-  "overscroll-behavior-y: contain",
+  "scroll-snap-align",
 ].forEach((token) => {
-  if (!app.includes(token) && !css.includes(token)) {
-    staticFailures.push(`Missing DepthGallery-style smooth scroll token: ${token}`);
+  if (app.includes(token) || css.includes(token)) {
+    failures.push(`Native section scroll should not keep brittle depth-scroll token: ${token}`);
   }
 });
 
 [
-  "getBoundingClientRect()",
-  "locomotive-scroll",
+  "height: var(--screen-height)",
+  "#contact.text-screen",
+  ".contact-form",
+  ".site-crowd-footer",
+  "scroll-snap-type: none",
 ].forEach((token) => {
-  if (app.includes(token) || css.includes(token)) {
-    staticFailures.push(`Scroll smoothing should avoid layout-heavy or unrelated tokens, found: ${token}`);
+  if (!app.includes(token) && !css.includes(token)) {
+    failures.push(`Missing native full-screen scroll token: ${token}`);
   }
 });
 
@@ -56,104 +52,94 @@ page.on("console", (message) => {
 });
 
 await page.goto(baseUrl, { waitUntil: "networkidle" });
-await page.waitForTimeout(800);
+await page.waitForTimeout(700);
 
-const report = await page.evaluate(async () => {
-  const rootStyle = getComputedStyle(document.documentElement);
+const layoutReport = await page.evaluate(() => {
   const screens = [...document.querySelectorAll(".text-screen")];
   const footer = document.querySelector(".site-crowd-footer");
-  const sectionSnapAligns = screens.map((screen) => getComputedStyle(screen).scrollSnapAlign);
-  const footerSnapAlign = footer ? getComputedStyle(footer).scrollSnapAlign : "";
-  const copyTransformBefore = getComputedStyle(screens[1]?.querySelector(".screen-copy")).transform;
-  const before = window.scrollY;
-  window.scrollTo({ top: window.innerHeight * 1.1, behavior: "smooth" });
-  await new Promise((resolve) => setTimeout(resolve, 900));
-  const after = window.scrollY;
-  const secondScreenTop = Math.round(screens[1]?.getBoundingClientRect().top ?? 9999);
-  const secondScreenStyle = screens[1] ? getComputedStyle(screens[1]) : null;
-  const secondCopyStyle = screens[1]?.querySelector(".screen-copy")
-    ? getComputedStyle(screens[1].querySelector(".screen-copy"))
-    : null;
-  const answersIndex = screens.findIndex((screen) => screen.id === "answers");
-  const contactIndex = screens.findIndex((screen) => screen.id === "contact");
-
-  window.scrollTo({ top: window.innerHeight * (contactIndex - 0.5), behavior: "auto" });
-  await new Promise((resolve) => setTimeout(resolve, 320));
-
-  const transitionPoint = document.elementFromPoint(
-    Math.round(window.innerWidth / 2),
-    Math.round(window.innerHeight * 0.72),
-  );
-  const transitionOwner = transitionPoint?.closest(".text-screen")?.id ?? "";
-  const answersRect = screens[answersIndex]?.getBoundingClientRect();
-  const contactRect = screens[contactIndex]?.getBoundingClientRect();
 
   return {
-    after,
-    before,
-    copyTransformBefore,
-    copyTransformAfter: secondCopyStyle?.transform ?? "",
-    footerSnapAlign,
+    footerPosition: footer ? getComputedStyle(footer).position : "",
     rootDataset: document.documentElement.dataset.depthScroll ?? "",
-    rootOverscroll: rootStyle.overscrollBehaviorY,
-    rootSnapType: rootStyle.scrollSnapType,
-    activeIndex: Number(rootStyle.getPropertyValue("--depth-active-index") || 0),
-    depthCurrent: Number(rootStyle.getPropertyValue("--depth-scroll-current") || 0),
-    depthTarget: Number(rootStyle.getPropertyValue("--depth-scroll-target") || 0),
-    scrollDriftX: rootStyle.getPropertyValue("--scroll-drift-x").trim(),
-    scrollDriftY: rootStyle.getPropertyValue("--scroll-drift-y").trim(),
-    scrollProgress: Number(rootStyle.getPropertyValue("--scroll-progress") || 0),
-    scrollVelocity: Number(rootStyle.getPropertyValue("--scroll-velocity") || 0),
-    secondScreenTop,
-    secondScreenDistance: secondScreenStyle?.getPropertyValue("--screen-distance").trim() ?? "",
-    secondScreenOpacity: secondScreenStyle?.getPropertyValue("--screen-copy-opacity").trim() ?? "",
-    secondScreenPosition: secondScreenStyle?.position ?? "",
-    sectionSnapAligns,
-    contactTransition: {
-      answersTop: Math.round(answersRect?.top ?? 9999),
-      contactTop: Math.round(contactRect?.top ?? 9999),
-      owner: transitionOwner,
-    },
+    rootSnapType: getComputedStyle(document.documentElement).scrollSnapType,
+    screenHeights: screens.map((screen) => Math.round(screen.getBoundingClientRect().height)),
+    screenPositions: screens.map((screen) => getComputedStyle(screen).position),
     viewportHeight: window.innerHeight,
+  };
+});
+
+await page.locator(".site-crowd-footer").scrollIntoViewIfNeeded();
+await page.waitForTimeout(350);
+await page.evaluate(() => {
+  document.getElementById("contact")?.scrollIntoView({ block: "start", behavior: "smooth" });
+});
+await page.waitForTimeout(1000);
+
+const contactReport = await page.evaluate(() => {
+  const contact = document.querySelector("#contact");
+  const form = document.querySelector("#contact .contact-form");
+  const copy = document.querySelector("#contact .screen-copy");
+  const rectOf = (element) => {
+    const rect = element?.getBoundingClientRect();
+    return rect
+      ? {
+        bottom: Math.round(rect.bottom),
+        height: Math.round(rect.height),
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        top: Math.round(rect.top),
+        width: Math.round(rect.width),
+      }
+      : null;
+  };
+
+  return {
+    contact: rectOf(contact),
+    copy: rectOf(copy),
+    copyOpacity: copy ? Number(getComputedStyle(copy).opacity) : 0,
+    form: rectOf(form),
+    formOpacity: form ? Number(getComputedStyle(form).opacity) : 0,
+    ownerAtCenter: document.elementFromPoint(
+      Math.round(window.innerWidth / 2),
+      Math.round(window.innerHeight / 2),
+    )?.closest(".text-screen, .site-crowd-footer")?.id ?? "",
+    viewportHeight: window.innerHeight,
+    viewportWidth: window.innerWidth,
   };
 });
 
 await browser.close();
 
-const failures = [...staticFailures];
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
-if (report.rootDataset !== "active") failures.push(`DepthGallery-style virtual scroll controller should be active: ${report.rootDataset}.`);
-if (report.rootSnapType !== "none") failures.push(`Root scroll snap should be disabled for smoother interpolation: ${report.rootSnapType}.`);
-if (report.rootOverscroll !== "contain") failures.push(`Root should contain overscroll bounce: ${report.rootOverscroll}.`);
-if (report.secondScreenPosition !== "sticky") failures.push(`Text screens should be sticky depth panels: ${report.secondScreenPosition}.`);
-if (report.sectionSnapAligns.some((value) => value !== "start")) {
-  failures.push(`Text screens should snap from their start edges: ${report.sectionSnapAligns.join(", ")}.`);
+if (layoutReport.rootDataset) failures.push(`Root should not expose depth-scroll state: ${layoutReport.rootDataset}.`);
+if (layoutReport.rootSnapType !== "none") failures.push(`Root scroll snap should stay disabled: ${layoutReport.rootSnapType}.`);
+if (layoutReport.screenPositions.some((position) => position !== "relative")) {
+  failures.push(`Text screens should be normal flow sections: ${layoutReport.screenPositions.join(", ")}.`);
 }
-if (report.footerSnapAlign !== "start") failures.push(`Footer should snap from start edge: ${report.footerSnapAlign}.`);
-if (report.after <= report.before + 80) failures.push(`Smooth scroll should move the page: ${report.before} -> ${report.after}.`);
-if (report.depthTarget <= 0 || report.depthCurrent <= 0) {
-  failures.push(`Virtual depth scroll should update target/current: ${report.depthTarget}, ${report.depthCurrent}.`);
+if (layoutReport.screenHeights.some((height) => Math.abs(height - layoutReport.viewportHeight) > 2)) {
+  failures.push(`Every text screen should cover one viewport: ${JSON.stringify(layoutReport)}.`);
 }
-if (report.activeIndex < 1) failures.push(`Virtual depth active index should advance: ${report.activeIndex}.`);
-if (report.scrollProgress <= 0) failures.push(`Scroll progress CSS variable should update: ${report.scrollProgress}.`);
-if (!report.scrollDriftX.endsWith("px") || !report.scrollDriftY.endsWith("px")) {
-  failures.push(`Scroll drift variables should be px values: ${report.scrollDriftX}, ${report.scrollDriftY}.`);
+if (layoutReport.footerPosition !== "relative") {
+  failures.push(`Footer should be a normal flow section: ${layoutReport.footerPosition}.`);
 }
-if (!report.secondScreenDistance || !report.secondScreenOpacity) {
-  failures.push(`Each depth panel should receive per-screen CSS variables: ${report.secondScreenDistance}, ${report.secondScreenOpacity}.`);
+if (!contactReport.contact || Math.abs(contactReport.contact.top) > 4) {
+  failures.push(`Contact should scroll back to the top cleanly: ${JSON.stringify(contactReport)}.`);
 }
-if (!report.copyTransformAfter || report.copyTransformAfter === "none" || report.copyTransformAfter === report.copyTransformBefore) {
-  failures.push(`Depth panel copy should transform as virtual depth changes: ${report.copyTransformBefore} -> ${report.copyTransformAfter}.`);
+if (!contactReport.form || contactReport.form.width < 300 || contactReport.form.bottom <= 0 || contactReport.form.top >= contactReport.viewportHeight) {
+  failures.push(`Contact form should remain visible after scrolling back from footer: ${JSON.stringify(contactReport)}.`);
 }
-if (Math.abs(report.secondScreenTop) > report.viewportHeight * 0.78) {
-  failures.push(`Smooth scroll should move toward the next full-screen section: top=${report.secondScreenTop}.`);
+if (!contactReport.copy || contactReport.copy.width < 320 || contactReport.copy.bottom <= 0 || contactReport.copy.top >= contactReport.viewportHeight) {
+  failures.push(`Contact copy should remain visible after scrolling back from footer: ${JSON.stringify(contactReport)}.`);
 }
-if (report.contactTransition.contactTop > 96 && report.contactTransition.owner === "contact") {
-  failures.push(`Contact screen should not overlay the previous screen before it reaches the top: ${JSON.stringify(report.contactTransition)}.`);
+if (contactReport.formOpacity < 0.98 || contactReport.copyOpacity < 0.98) {
+  failures.push(`Contact content should not fade or park: ${JSON.stringify(contactReport)}.`);
+}
+if (contactReport.ownerAtCenter !== "contact") {
+  failures.push(`Viewport center should belong to contact after footer-to-contact scroll: ${JSON.stringify(contactReport)}.`);
 }
 
 if (failures.length > 0) {
-  throw new Error(`Scroll smoothness failed:\n${failures.join("\n")}\n\n${JSON.stringify(report, null, 2)}`);
+  throw new Error(`Scroll smoothness failed:\n${failures.join("\n")}\n\n${JSON.stringify({ layoutReport, contactReport }, null, 2)}`);
 }
 
-console.log(`Depth scroll smoothness passed: ${report.rootSnapType}, current=${report.depthCurrent.toFixed(2)}.`);
+console.log("Native full-screen scroll passed; contact stays visible after footer return.");

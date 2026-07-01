@@ -112,7 +112,6 @@ const contactReport = await page.evaluate(() => {
   return {
     copy: rectOf(copy),
     form: rectOf(form),
-    stableDepth: screen?.getAttribute("data-depth-stable") ?? "",
     title: rectOf(title),
     titleFontSize: Number.parseFloat(title ? getComputedStyle(title).fontSize : "0"),
     viewportHeight: window.innerHeight,
@@ -198,10 +197,6 @@ if (contactReport.form && contactReport.copy && contactReport.copy.left - contac
 if (!contactReport.title || contactReport.title.height > 250 || contactReport.titleFontSize > 82) {
   failures.push(`Contact heading should be slightly calmer than sales headings: ${JSON.stringify(contactReport)}.`);
 }
-if (contactReport.stableDepth !== "true") {
-  failures.push(`Contact section must keep stable depth rendering: ${contactReport.stableDepth}.`);
-}
-
 if (footerReport.titleLines.join(" ") !== "Stay extraordinary. Don't be the same.") {
   failures.push(`Footer title copy is wrong: ${JSON.stringify(footerReport.titleLines)}.`);
 }
