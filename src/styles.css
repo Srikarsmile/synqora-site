@@ -128,18 +128,18 @@ body {
   display: flex;
   justify-content: center;
   padding: 30px 28px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.94);
   pointer-events: none;
   text-shadow: 0 1px 18px rgba(66, 38, 24, 0.24);
 }
 
 .wordmark {
   margin: 0;
-  padding-bottom: 4px;
+  padding-bottom: 5px;
   border-bottom: 1px solid currentColor;
   font-family: var(--font-display);
-  font-size: 1.04rem;
-  font-weight: 500;
+  font-size: 1.36rem;
+  font-weight: 300;
   letter-spacing: 0;
   line-height: 1.1;
 }
@@ -184,7 +184,7 @@ body {
 
 .text-screen[data-align="left"] {
   --screen-title-size: 4.85rem;
-  --screen-title-measure: 12.6ch;
+  --screen-title-measure: 14.9ch;
   --screen-title-line: 0.94;
   justify-items: start;
   padding-left: 92px;
@@ -193,7 +193,7 @@ body {
 
 .text-screen[data-align="right"] {
   --screen-title-size: 4.85rem;
-  --screen-title-measure: 12.6ch;
+  --screen-title-measure: 14.9ch;
   --screen-title-line: 0.94;
   justify-items: end;
   padding-right: 92px;
@@ -585,14 +585,22 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 
 .text-screen[data-align="left"] .screen-copy {
   justify-items: start;
-  width: min(680px, 100%);
+  width: min(780px, 100%);
   text-align: left;
 }
 
 .text-screen[data-align="right"] .screen-copy {
   justify-items: end;
-  width: min(680px, 100%);
+  width: min(780px, 100%);
   text-align: right;
+}
+
+.screen-gradient-contact {
+  --screen-title-size: 4.58rem;
+}
+
+#contact .screen-copy {
+  width: min(560px, 100%);
 }
 
 .text-screen[data-align="center"] .screen-copy {
@@ -654,12 +662,12 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 46px;
-  padding: 0 22px;
+  min-height: 56px;
+  padding: 0 30px;
   border-radius: 999px;
   background: #111316;
   color: #fffaf2;
-  font-size: 0.98rem;
+  font-size: 1.06rem;
   font-weight: 650;
   line-height: 1;
   text-decoration-line: none;
@@ -730,7 +738,7 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   left: clamp(32px, 6.4vw, 92px);
   z-index: 5;
   display: grid;
-  width: min(390px, calc(44vw - 122px));
+  width: min(520px, calc(44vw - 36px));
   gap: 12px;
   color: #111316;
   text-align: left;
@@ -885,7 +893,7 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   max-width: 12ch;
   margin: 0;
   font-family: var(--font-display);
-  font-size: 6.8rem;
+  font-size: 7.1rem;
   font-weight: 300;
   letter-spacing: 0;
   line-height: 0.9;
@@ -998,6 +1006,9 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   .text-screen[data-align],
   .text-screen[data-align="left"],
   .text-screen[data-align="right"] {
+    --screen-title-size: clamp(3.08rem, 13vw, 3.65rem);
+    --screen-title-measure: 11.2ch;
+    --screen-title-line: 0.96;
     justify-items: center;
     padding-right: 22px;
     padding-left: 22px;
@@ -1013,6 +1024,14 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 
   .service-focus-list {
     justify-content: center;
+  }
+
+  #services .screen-copy {
+    gap: 14px;
+  }
+
+  #services .screen-copy-line {
+    max-width: 22.5rem;
   }
 
   .depth-motion-field {
@@ -1189,8 +1208,12 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 @media (max-width: 460px) {
-  .text-screen {
-    --screen-title-size: 3.35rem;
+  .text-screen,
+  .text-screen[data-align],
+  .text-screen[data-align="left"],
+  .text-screen[data-align="right"] {
+    --screen-title-size: 3.05rem;
+    --screen-title-measure: 11.2ch;
   }
 
   .text-screen.screen-gradient-contact {
