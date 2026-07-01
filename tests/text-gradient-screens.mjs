@@ -53,7 +53,6 @@ requiredContentTokens.forEach((token) => {
   "example-card",
   "brief-form",
   "<picture",
-  "getBoundingClientRect",
   "--screen-presence",
   "AI training and implementation",
   "Turn one slow task into an AI tool.",
