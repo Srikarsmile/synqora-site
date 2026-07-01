@@ -3,6 +3,16 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
 const serviceFocusItems = ["Websites", "AI tools", "Automation"];
+const progressItems = [
+  { id: "hero", label: "Start" },
+  { id: "services", label: "Services" },
+  { id: "method", label: "Method" },
+  { id: "work-exkitchens", label: "ExKitchens" },
+  { id: "work-holditdown", label: "Hold It Down" },
+  { id: "answers", label: "Ownership" },
+  { id: "contact", label: "Contact" },
+  { id: "footer", label: "Email" },
+];
 const logoFrameIds = new Set([
   "hero",
   "services",
@@ -19,7 +29,8 @@ const workProjects = [
     label: "ExKitchens",
     eyebrow: "Selected work",
     title: "ExKitchens",
-    copy: "A premium marketplace for ex-display kitchens, built around trust, product discovery, and upfront savings.",
+    copy: "A premium marketplace for ex-display kitchens, shaped around trust, product discovery, and upfront savings.",
+    result: "Marketplace build for premium kitchen resale.",
     note: "Luxury marketplace. Product listings. Sustainability story.",
     url: "https://www.exkitchens.com",
     image: "/images/work/exkitchens-desktop.jpg",
@@ -34,6 +45,7 @@ const workProjects = [
     eyebrow: "Selected work",
     title: "Hold It Down",
     copy: "A community organisation site for programmes, events, donations, impact, and a clear public mission.",
+    result: "Community site with programmes, events, and donation flow.",
     note: "CIC website. Programmes. Events. Donation flow.",
     url: "https://www.holditdown.uk",
     image: "/images/work/holditdown-desktop.jpg",
@@ -60,6 +72,7 @@ const textScreens = [
     title: "Websites and AI systems.",
     copy: "Bring us the messy problem. We'll turn it into a website, AI tool, or workflow people can use.",
     cta: "Start a build",
+    proof: "Selected work: ExKitchens and Hold It Down",
     tone: "hero",
     align: "center",
   },
@@ -168,7 +181,7 @@ function ContactForm() {
       <button className="contact-submit" type="submit">
         Send enquiry
       </button>
-      <p className="contact-trust">We reply within 24 hours with the clearest first build path.</p>
+      <p className="contact-trust">No sales call pressure. We reply within 24 hours with the clearest first build path.</p>
     </form>
   );
 }
@@ -198,6 +211,21 @@ function SelectedWorkPreview({ project }) {
         decoding="async"
       />
     </a>
+  );
+}
+
+function SectionProgress() {
+  return (
+    <div className="section-progress" aria-hidden="true">
+      {progressItems.map((item) => (
+        <span
+          className="section-progress-dot"
+          data-progress-id={item.id}
+          key={item.id}
+          title={item.label}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -288,9 +316,9 @@ function HeroShaderGradient() {
               cDistance={3.6}
               cPolarAngle={90}
               cameraZoom={1}
-              color1="#ff5005"
-              color2="#dbba95"
-              color3="#d0bce1"
+              color1="#e77845"
+              color2="#d6b79e"
+              color3="#c7bfdc"
               control="props"
               destination="onCanvas"
               embedMode="off"
@@ -316,7 +344,7 @@ function HeroShaderGradient() {
               uDensity={1.3}
               uFrequency={5.5}
               uSpeed={0.4}
-              uStrength={4}
+              uStrength={3.35}
               uTime={0}
               wireframe={false}
             />
@@ -629,6 +657,7 @@ function TextScreen({ screen, index }) {
           {screen.title}
         </Heading>
         <p className="screen-copy-line">{screen.copy}</p>
+        {screen.result ? <p className="selected-work-result">{screen.result}</p> : null}
         {screen.id === "services" ? (
           <ul className="service-focus-list" aria-label="Synqora service focus">
             {serviceFocusItems.map((item) => (
@@ -647,6 +676,7 @@ function TextScreen({ screen, index }) {
           </a>
         ) : null}
         {screen.cta ? <ScreenCta>{screen.cta}</ScreenCta> : null}
+        {screen.proof ? <p className="screen-proof">{screen.proof}</p> : null}
       </div>
     </section>
   );
@@ -911,6 +941,7 @@ export function App() {
       <header className="site-header">
         <p className="wordmark">Synqora</p>
       </header>
+      <SectionProgress />
 
       <main>
         <div className="depth-scroll-stage" aria-label="Synqora story">
