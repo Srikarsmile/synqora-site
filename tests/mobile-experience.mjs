@@ -76,6 +76,26 @@ const heroReport = await page.evaluate(() => {
 
 await page.locator("#services").scrollIntoViewIfNeeded();
 await page.waitForTimeout(500);
+const servicesMotionReport = await page.evaluate(async () => {
+  const field = document.querySelector("#services .depth-motion-field");
+  const copy = document.querySelector("#services .screen-copy");
+  const before = {
+    copyTransform: copy ? getComputedStyle(copy).transform : "",
+    fieldTransform: field ? getComputedStyle(field).transform : "",
+  };
+
+  window.scrollBy({ top: 160, behavior: "auto" });
+  await new Promise((resolve) => setTimeout(resolve, 140));
+
+  return {
+    before,
+    after: {
+      copyTransform: copy ? getComputedStyle(copy).transform : "",
+      fieldTransform: field ? getComputedStyle(field).transform : "",
+    },
+    depthStage: document.documentElement.dataset.depthStage ?? "",
+  };
+});
 const servicesReport = await page.evaluate(() => ({
   items: [...document.querySelectorAll("#services .service-focus-item")].map((item) => {
     const rect = item.getBoundingClientRect();
@@ -191,6 +211,15 @@ if (servicesReport.items.some((item) => !item.visible)) {
 if (servicesReport.orbitAnimationName === "none" || servicesReport.orbitAnimationDuration === "0s") {
   failures.push(`Mobile needs a lightweight visible depth animation: ${JSON.stringify(servicesReport)}.`);
 }
+if (servicesMotionReport.depthStage !== "mobile") {
+  failures.push(`Mobile should use the mobile depth stage: ${JSON.stringify(servicesMotionReport)}.`);
+}
+if (servicesMotionReport.before.fieldTransform === servicesMotionReport.after.fieldTransform) {
+  failures.push(`Mobile depth art should react to scroll: ${JSON.stringify(servicesMotionReport)}.`);
+}
+if (servicesMotionReport.before.copyTransform === servicesMotionReport.after.copyTransform) {
+  failures.push(`Mobile section copy should subtly drift with scroll: ${JSON.stringify(servicesMotionReport)}.`);
+}
 
 screenCoverage.forEach((screen) => {
   if (Math.abs(screen.height - screen.viewportHeight) > 2) {
@@ -285,7 +314,7 @@ if (footerReport.pet && footerReport.crowd && footerReport.pet.bottom > footerRe
 }
 
 if (failures.length > 0) {
-  throw new Error(`Mobile experience failed:\n${failures.join("\n")}\n\n${JSON.stringify({ heroReport, servicesReport, contactReport, footerReport }, null, 2)}`);
+  throw new Error(`Mobile experience failed:\n${failures.join("\n")}\n\n${JSON.stringify({ heroReport, servicesReport, servicesMotionReport, contactReport, footerReport }, null, 2)}`);
 }
 
 console.log(

@@ -453,6 +453,16 @@ function DepthStageController() {
             `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
             `opacity: ${opacity.toFixed(3)}`,
           ].join("; ");
+
+          panel.querySelectorAll(".screen-copy, .selected-work-preview").forEach((element) => {
+            const contentY = clamp(progress * -18, -20, 20);
+            const contentOpacity = 0.78 + presence * 0.22;
+
+            element.style.cssText = [
+              `opacity: ${contentOpacity.toFixed(3)}`,
+              `transform: translate3d(0, ${contentY.toFixed(1)}px, 0)`,
+            ].join("; ");
+          });
         });
 
         return;
