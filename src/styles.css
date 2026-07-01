@@ -213,14 +213,14 @@ body {
   min-height: var(--screen-height);
   opacity: 0;
   pointer-events: none;
-  transform: translate3d(0, 34px, 0) scale(0.96);
+  transform: translate3d(0, 0, 0);
   will-change: transform, opacity;
 }
 
 .depth-scroll-stage .text-screen:first-child {
   opacity: 1;
   pointer-events: auto;
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: translate3d(0, 0, 0);
 }
 
 html[data-depth-stage="active"] .depth-scroll-stage .text-screen {
@@ -1110,6 +1110,18 @@ html[data-depth-stage="active"] .depth-motion-field {
   }
 }
 
+@keyframes mobile-depth-float {
+  from {
+    opacity: 0.58;
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) + 12px), -36px) rotateX(60deg) rotateZ(-1.4deg) scale(0.98);
+  }
+
+  to {
+    opacity: 0.78;
+    transform: translate3d(var(--depth-x), calc(var(--depth-y) - 12px), 44px) rotateX(55deg) rotateZ(1.4deg) scale(1.02);
+  }
+}
+
 @media (max-width: 1100px) {
   .text-screen {
     --screen-title-size: 4.9rem;
@@ -1235,8 +1247,8 @@ html[data-depth-stage="active"] .depth-motion-field {
     --depth-rotate: 0deg;
     width: 82vw;
     height: 42vh;
-    animation: none;
-    will-change: auto;
+    animation: mobile-depth-float 9s ease-in-out infinite alternate;
+    will-change: transform, opacity;
   }
 
   .depth-thread-field {
@@ -1319,21 +1331,21 @@ html[data-depth-stage="active"] .depth-motion-field {
   }
 
   .screen-gradient-contact {
-    --screen-title-size: 2.55rem;
+    --screen-title-size: clamp(2.15rem, 9vw, 2.55rem);
     --screen-title-measure: 11ch;
     --screen-title-line: 0.94;
     grid-template-columns: 1fr;
-    align-content: start;
+    align-content: center;
     justify-content: center;
     justify-items: center;
-    gap: 14px;
-    padding-top: 72px;
-    padding-bottom: 36px;
+    gap: 16px;
+    padding-top: 78px;
+    padding-bottom: 30px;
   }
 
   #contact.text-screen {
     grid-template-columns: 1fr;
-    align-content: start;
+    align-content: center;
     justify-content: center;
     justify-items: center;
     padding-right: 22px;
@@ -1342,9 +1354,10 @@ html[data-depth-stage="active"] .depth-motion-field {
 
   #contact .screen-copy,
   .screen-gradient-contact .screen-copy {
+    grid-row: auto;
     grid-column: 1;
     order: 1;
-    gap: 12px;
+    gap: 8px;
   }
 
   .screen-gradient-contact .screen-eyebrow {
@@ -1352,15 +1365,17 @@ html[data-depth-stage="active"] .depth-motion-field {
   }
 
   .screen-gradient-contact .screen-copy-line {
-    max-width: 21rem;
-    font-size: 0.98rem;
-    line-height: 1.22;
+    max-width: 20rem;
+    font-size: 0.94rem;
+    line-height: 1.18;
   }
 
   .contact-form {
     position: relative;
     top: auto;
     left: auto;
+    grid-row: auto;
+    grid-column: 1;
     order: 2;
     width: min(22.4rem, 100%);
     gap: 8px;

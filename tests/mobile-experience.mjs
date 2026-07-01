@@ -14,6 +14,7 @@ const staticFailures = [];
   "100lvh",
   "screen-gradient-contact",
   "scroll-snap-type: none",
+  "mobile-depth-float",
   "crowd-footer-title",
   "crowd-canvas-wrap",
 ].forEach((token) => {
@@ -84,6 +85,8 @@ const servicesReport = await page.evaluate(() => ({
       visible: rect.width > 20 && rect.height > 20,
     };
   }),
+  orbitAnimationName: getComputedStyle(document.querySelector("#services .depth-motion-orbit")).animationName,
+  orbitAnimationDuration: getComputedStyle(document.querySelector("#services .depth-motion-orbit")).animationDuration,
 }));
 
 await page.locator("#contact").scrollIntoViewIfNeeded();
@@ -104,6 +107,7 @@ const contactReport = await page.evaluate(() => {
   };
 
   return {
+    copy: rectOf("#contact .screen-copy"),
     form: rectOf("#contact .contact-form"),
     hiddenOptionalCount: [...document.querySelectorAll("#contact .mobile-optional-field")]
       .filter((element) => getComputedStyle(element).display === "none").length,
@@ -184,6 +188,9 @@ const serviceTexts = servicesReport.items.map((item) => item.text);
 if (servicesReport.items.some((item) => !item.visible)) {
   failures.push(`Mobile service lanes should be visibly scannable: ${JSON.stringify(servicesReport)}.`);
 }
+if (servicesReport.orbitAnimationName === "none" || servicesReport.orbitAnimationDuration === "0s") {
+  failures.push(`Mobile needs a lightweight visible depth animation: ${JSON.stringify(servicesReport)}.`);
+}
 
 screenCoverage.forEach((screen) => {
   if (Math.abs(screen.height - screen.viewportHeight) > 2) {
@@ -211,6 +218,9 @@ if (!contactReport.submit || contactReport.submit.bottom > contactReport.viewpor
 }
 if (!contactReport.form || contactReport.form.width < 330) {
   failures.push(`Mobile contact form should keep a comfortable readable width: ${JSON.stringify(contactReport.form)}.`);
+}
+if (!contactReport.copy || !contactReport.form || contactReport.form.top < contactReport.copy.bottom + 12) {
+  failures.push(`Mobile contact form should not overlap the contact headline/copy: ${JSON.stringify(contactReport)}.`);
 }
 if (contactReport.visibleFieldCount > 3) {
   failures.push(`Mobile contact form should reduce to the three highest-intent fields: ${JSON.stringify(contactReport)}.`);

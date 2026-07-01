@@ -383,6 +383,9 @@ function DepthStageController() {
       panels.forEach((panel) => {
         panel.removeAttribute("style");
         panel.removeAttribute("inert");
+        panel.querySelectorAll(".screen-copy, .selected-work-preview").forEach((element) => {
+          element.removeAttribute("style");
+        });
       });
     };
 
@@ -424,7 +427,7 @@ function DepthStageController() {
       if (!enabled) return;
 
       targetProgress = getProgressFromScroll();
-      currentProgress = lerp(currentProgress, targetProgress, 0.24);
+      currentProgress = lerp(currentProgress, targetProgress, 0.42);
       velocity = lerp(velocity, currentProgress - previousProgress, 0.18);
       previousProgress = currentProgress;
 
@@ -433,19 +436,30 @@ function DepthStageController() {
       panels.forEach((panel, index) => {
         const distance = index - currentProgress;
         const absDistance = Math.abs(distance);
-        const presence = clamp(1 - absDistance * 0.72, 0, 1);
-        const x = clamp(distance * -76 + normalizedVelocity * 42, -130, 130);
-        const y = clamp(distance * 38 + normalizedVelocity * -22, -82, 82);
-        const scale = 0.93 + presence * 0.07;
-        const opacity = clamp(presence * 1.12, 0, 1);
+        const presence = clamp(1 - absDistance * 1.68, 0, 1);
+        const panelOpacity = clamp(1 - absDistance * 0.72, 0, 1);
+        const contentOpacity = clamp(presence * presence, 0, 1);
+        const contentY = clamp(distance * 22 + normalizedVelocity * -12, -34, 34);
 
         panel.style.cssText = [
-          `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`,
-          `opacity: ${opacity.toFixed(3)}`,
-          `pointer-events: ${absDistance < 0.52 ? "auto" : "none"}`,
-          `visibility: ${opacity > 0.03 ? "visible" : "hidden"}`,
+          "transform: translate3d(0, 0, 0)",
+          `opacity: ${panelOpacity.toFixed(3)}`,
+          `pointer-events: ${absDistance < 0.5 ? "auto" : "none"}`,
+          `visibility: ${panelOpacity > 0.04 ? "visible" : "hidden"}`,
+          `z-index: ${Math.round((1 - absDistance) * 100)}`,
         ].join("; ");
-        panel.toggleAttribute("inert", absDistance >= 0.62);
+        panel.toggleAttribute("inert", absDistance >= 0.56);
+
+        panel.querySelectorAll(".screen-copy, .selected-work-preview").forEach((element) => {
+          const transform = element.classList.contains("selected-work-preview")
+            ? `translateY(calc(-50% + ${contentY.toFixed(1)}px))`
+            : `translate3d(0, ${contentY.toFixed(1)}px, 0)`;
+
+          element.style.cssText = [
+            `opacity: ${contentOpacity.toFixed(3)}`,
+            `transform: ${transform}`,
+          ].join("; ");
+        });
       });
 
       fields.forEach(({ align, field }, index) => {

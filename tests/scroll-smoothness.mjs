@@ -113,6 +113,42 @@ for (let index = 0; index < 6; index += 1) {
   )));
 }
 
+await page.evaluate(() => {
+  const stage = document.querySelector(".depth-scroll-stage");
+  window.scrollTo({ top: (stage?.offsetTop ?? 0) + window.innerHeight * 0.5, behavior: "auto" });
+});
+await page.waitForTimeout(720);
+const transitionReport = await page.evaluate(() => {
+  const rectOf = (element) => {
+    const rect = element?.getBoundingClientRect();
+    return rect
+      ? {
+        height: Math.round(rect.height),
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+        width: Math.round(rect.width),
+      }
+      : null;
+  };
+
+  return [...document.querySelectorAll(".depth-scroll-stage .text-screen")].map((screen) => {
+    const style = getComputedStyle(screen);
+    const copy = screen.querySelector(".screen-copy");
+    const title = screen.querySelector(".screen-title");
+
+    return {
+      copyOpacity: copy ? Number.parseFloat(getComputedStyle(copy).opacity) || 0 : 0,
+      id: screen.id,
+      opacity: Number.parseFloat(style.opacity) || 0,
+      rect: rectOf(screen),
+      titleRect: rectOf(title),
+      transform: style.transform,
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+    };
+  });
+});
+
 await page.locator(".site-crowd-footer").scrollIntoViewIfNeeded();
 await page.waitForTimeout(350);
 await page.evaluate(() => {
@@ -185,6 +221,18 @@ if (layoutReport.storyScreenHeights.some((height) => Math.abs(height - layoutRep
 }
 if (stageOwnerReport.join("|") !== "hero|services|method|work-exkitchens|work-holditdown|answers") {
   failures.push(`Depth stage should activate the expected panel as the user scrolls: ${JSON.stringify(stageOwnerReport)}.`);
+}
+const visibleTransitionPanels = transitionReport.filter((screen) => screen.opacity > 0.08);
+if (visibleTransitionPanels.some((screen) => (
+  !screen.rect
+  || screen.rect.width < screen.viewportWidth - 2
+  || screen.rect.height < screen.viewportHeight - 2
+  || Math.abs(screen.rect.left) > 2
+))) {
+  failures.push(`Depth panels should stay full-bleed during transitions, not scale into cards: ${JSON.stringify(visibleTransitionPanels)}.`);
+}
+if (transitionReport.filter((screen) => screen.copyOpacity > 0.28).length > 1) {
+  failures.push(`Depth transition text should not overlap as two readable screens: ${JSON.stringify(transitionReport)}.`);
 }
 if (!contactReport.contact || Math.abs(contactReport.contact.top) > 4) {
   failures.push(`Contact should scroll back to the top cleanly: ${JSON.stringify(contactReport)}.`);
