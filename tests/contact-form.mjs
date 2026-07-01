@@ -80,8 +80,10 @@ const report = await page.evaluate(() => {
     firstFieldRadius: firstFieldStyle?.borderRadius ?? "",
     formAria: form?.getAttribute("aria-label") ?? "",
     formLeft: formRect ? Math.round(formRect.left) : -1,
+    formPosition: form ? getComputedStyle(form).position : "",
     formRight: formRect ? Math.round(formRect.right) : -1,
     formTop: formRect ? Math.round(formRect.top - (contactRect?.top ?? 0)) : -1,
+    formTransform: form ? getComputedStyle(form).transform : "",
     visibleEmailCount: document.querySelectorAll("#contact .email-link").length,
     hasMessage: Boolean(document.querySelector("#contact textarea[name='message']")),
     method: form?.getAttribute("method") ?? "",
@@ -248,6 +250,9 @@ if (report.copyLeft - report.formRight < 144) {
   failures.push(`Contact copy should stay clearly separated from the form: formRight=${report.formRight}, copyLeft=${report.copyLeft}.`);
 }
 if (report.formTop < 160 || report.formTop > 420) failures.push(`Contact form should sit vertically centered in the open area: top=${report.formTop}.`);
+if (report.formPosition !== "relative" || report.formTransform !== "none") {
+  failures.push(`Contact form should be a stable grid item, not an absolute translated overlay: ${report.formPosition}, ${report.formTransform}.`);
+}
 if (report.visibleEmailCount !== 0) failures.push(`Contact screen should not show the email beside the form: ${report.visibleEmailCount}.`);
 if (report.stableDepth !== "true") failures.push(`Contact screen should opt into stable depth rendering: ${report.stableDepth}.`);
 if (report.formBackface !== "hidden") failures.push(`Contact form should hide backface during sticky layer promotion: ${report.formBackface}.`);

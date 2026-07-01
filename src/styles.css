@@ -607,7 +607,20 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   --screen-title-size: 4.58rem;
 }
 
+#contact.text-screen {
+  grid-template-columns: minmax(420px, 520px) minmax(430px, 560px);
+  align-items: center;
+  justify-content: space-between;
+  justify-items: stretch;
+  column-gap: clamp(72px, 12vw, 260px);
+  padding-right: clamp(64px, 6.4vw, 92px);
+  padding-left: clamp(64px, 6.4vw, 92px);
+}
+
 #contact .screen-copy {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: end;
   width: min(560px, 100%);
 }
 
@@ -836,12 +849,16 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 .contact-form {
-  position: absolute;
-  top: 50%;
-  left: clamp(32px, 6.4vw, 92px);
+  position: relative;
+  top: auto;
+  left: auto;
   z-index: 5;
   display: grid;
-  width: min(520px, calc(44vw - 36px));
+  grid-row: 1;
+  grid-column: 1;
+  align-self: center;
+  justify-self: start;
+  width: min(520px, 100%);
   gap: 12px;
   color: #111316;
   text-align: left;
@@ -849,7 +866,7 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
   contain: layout paint style;
   isolation: isolate;
   opacity: 1;
-  transform: translateY(-40%);
+  transform: none;
 }
 
 .contact-field-row {
@@ -1250,13 +1267,27 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
     --screen-title-size: 2.55rem;
     --screen-title-measure: 11ch;
     --screen-title-line: 0.94;
+    grid-template-columns: 1fr;
     align-content: start;
+    justify-content: center;
+    justify-items: center;
     gap: 14px;
     padding-top: 72px;
     padding-bottom: 36px;
   }
 
+  #contact.text-screen {
+    grid-template-columns: 1fr;
+    align-content: start;
+    justify-content: center;
+    justify-items: center;
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  #contact .screen-copy,
   .screen-gradient-contact .screen-copy {
+    grid-column: 1;
     order: 1;
     gap: 12px;
   }
