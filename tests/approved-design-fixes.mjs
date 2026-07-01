@@ -43,6 +43,7 @@ const heroReport = await page.evaluate(() => {
     ctaText: cta?.textContent?.trim() ?? "",
     title: rectOf(title),
     wordmark: rectOf(wordmark),
+    wordmarkColor: wordmarkStyle?.color ?? "",
     wordmarkFontSize: Number.parseFloat(wordmarkStyle?.fontSize ?? "0"),
     wordmarkWeight: wordmarkStyle?.fontWeight ?? "",
   };
@@ -66,6 +67,8 @@ for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "a
     const title = screen?.querySelector(".screen-title");
     const body = screen?.querySelector(".screen-copy-line");
     const note = screen?.querySelector(".screen-note");
+    const wordmark = document.querySelector(".wordmark");
+    const wordmarkStyle = wordmark ? getComputedStyle(wordmark) : null;
     const rectOf = (element) => {
       const rect = element?.getBoundingClientRect();
       return rect
@@ -92,6 +95,7 @@ for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "a
       titleFontSize: Number.parseFloat(title ? getComputedStyle(title).fontSize : "0"),
       viewportHeight: window.innerHeight,
       viewportWidth: window.innerWidth,
+      wordmarkColor: wordmarkStyle?.color ?? "",
     };
   }, id));
 }
@@ -103,6 +107,8 @@ const contactReport = await page.evaluate(() => {
   const form = document.querySelector("#contact .contact-form");
   const copy = document.querySelector("#contact .screen-copy");
   const title = document.querySelector("#contact .screen-title");
+  const wordmark = document.querySelector(".wordmark");
+  const wordmarkStyle = wordmark ? getComputedStyle(wordmark) : null;
   const rectOf = (element) => {
     const rect = element?.getBoundingClientRect();
     return rect
@@ -124,6 +130,7 @@ const contactReport = await page.evaluate(() => {
     titleFontSize: Number.parseFloat(title ? getComputedStyle(title).fontSize : "0"),
     viewportHeight: window.innerHeight,
     viewportWidth: window.innerWidth,
+    wordmarkColor: wordmarkStyle?.color ?? "",
   };
 });
 
@@ -134,6 +141,8 @@ const footerReport = await page.evaluate(() => {
   const title = document.querySelector(".crowd-footer-title");
   const email = document.querySelector(".crowd-footer-email");
   const crowd = document.querySelector(".crowd-canvas-wrap");
+  const wordmark = document.querySelector(".wordmark");
+  const wordmarkStyle = wordmark ? getComputedStyle(wordmark) : null;
   const rectOf = (element) => {
     const rect = element?.getBoundingClientRect();
     return rect
@@ -156,6 +165,7 @@ const footerReport = await page.evaluate(() => {
     titleLines: [...document.querySelectorAll(".crowd-footer-title span")].map((line) => line.textContent?.trim() ?? ""),
     titleWeight: title ? getComputedStyle(title).fontWeight : "",
     viewportHeight: window.innerHeight,
+    wordmarkColor: wordmarkStyle?.color ?? "",
   };
 });
 
@@ -168,8 +178,18 @@ if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}
 if (!heroReport.wordmark || heroReport.wordmarkFontSize < 21) {
   failures.push(`Wordmark should be large enough to read as the brand on desktop: ${JSON.stringify(heroReport.wordmark)} at ${heroReport.wordmarkFontSize}px.`);
 }
-if (heroReport.wordmarkWeight !== "300" && heroReport.wordmarkWeight !== "400") {
-  failures.push(`Wordmark should stay quiet and premium, not bold: ${heroReport.wordmarkWeight}.`);
+if (heroReport.wordmarkWeight !== "400") {
+  failures.push(`Wordmark should be slightly bolder while staying premium: ${heroReport.wordmarkWeight}.`);
+}
+const logoColors = [
+  heroReport.wordmarkColor,
+  ...sectionReports.map((section) => section.wordmarkColor),
+  contactReport.wordmarkColor,
+  footerReport.wordmarkColor,
+].filter(Boolean);
+const distinctLogoColors = new Set(logoColors);
+if (distinctLogoColors.size < 4) {
+  failures.push(`Wordmark should change color across frames: ${JSON.stringify(logoColors)}.`);
 }
 if (!heroReport.cta || heroReport.cta.height < 54 || heroReport.cta.width < 150 || heroReport.ctaFontSize < 16) {
   failures.push(`Hero CTA should be larger and easier to act on: ${JSON.stringify(heroReport)}.`);

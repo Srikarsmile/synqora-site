@@ -45,6 +45,7 @@
   --quiet: rgba(255, 255, 255, 0.72);
   --paper: #d8b39e;
   --footer-paper: #fff;
+  --wordmark-color: #fffaf2;
   --font-display: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Arial, sans-serif;
   --font-body: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
   --depth-stage-height: 600svh;
@@ -121,9 +122,10 @@ body {
   display: flex;
   justify-content: center;
   padding: 30px 28px;
-  color: rgba(255, 255, 255, 0.94);
+  color: var(--wordmark-color);
   pointer-events: none;
   text-shadow: 0 1px 18px rgba(66, 38, 24, 0.24);
+  transition: color 280ms ease, text-shadow 280ms ease;
 }
 
 .wordmark {
@@ -132,9 +134,41 @@ body {
   border-bottom: 1px solid currentColor;
   font-family: var(--font-display);
   font-size: 1.36rem;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: 0;
   line-height: 1.1;
+}
+
+html[data-logo-frame="hero"] {
+  --wordmark-color: #fffaf2;
+}
+
+html[data-logo-frame="services"] {
+  --wordmark-color: #15383d;
+}
+
+html[data-logo-frame="method"] {
+  --wordmark-color: #fffaf2;
+}
+
+html[data-logo-frame="work-exkitchens"] {
+  --wordmark-color: #211921;
+}
+
+html[data-logo-frame="work-holditdown"] {
+  --wordmark-color: #fffaf2;
+}
+
+html[data-logo-frame="answers"] {
+  --wordmark-color: #173923;
+}
+
+html[data-logo-frame="contact"] {
+  --wordmark-color: #2a211f;
+}
+
+html[data-logo-frame="footer"] {
+  --wordmark-color: #111316;
 }
 
 .text-screen {

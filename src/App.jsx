@@ -3,6 +3,16 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
 const serviceFocusItems = ["Websites", "AI tools", "Automation"];
+const logoFrameIds = new Set([
+  "hero",
+  "services",
+  "method",
+  "work-exkitchens",
+  "work-holditdown",
+  "answers",
+  "contact",
+  "footer",
+]);
 const workProjects = [
   {
     id: "work-exkitchens",
@@ -373,6 +383,35 @@ function DepthStageController() {
     const lerp = (from, to, amount) => from + (to - from) * amount;
     const prefersReducedMotion = () => reducedMotionQuery?.matches ?? false;
     const prefersDesktopDepth = () => desktopQuery?.matches ?? true;
+    const setLogoFrame = (frameId) => {
+      const nextFrame = frameId && logoFrameIds.has(frameId) ? frameId : "hero";
+      if (root.dataset.logoFrame === nextFrame) return;
+      root.dataset.logoFrame = nextFrame;
+    };
+
+    const updateLogoFrame = () => {
+      const sampleY = clamp(Math.round(viewportHeight * 0.42), 86, viewportHeight - 2);
+      const centeredSection = document
+        .elementFromPoint(Math.round(window.innerWidth / 2), sampleY)
+        ?.closest(".text-screen, .site-crowd-footer");
+
+      if (centeredSection?.classList.contains("site-crowd-footer")) {
+        setLogoFrame("footer");
+        return;
+      }
+
+      if (centeredSection?.id === "contact") {
+        setLogoFrame("contact");
+        return;
+      }
+
+      if (enabled) {
+        setLogoFrame(panels[Math.round(currentProgress)]?.id);
+        return;
+      }
+
+      setLogoFrame(centeredSection?.id);
+    };
 
     const clearFieldStyles = () => {
       fields.forEach(({ field }) => {
@@ -413,6 +452,7 @@ function DepthStageController() {
 
       if (!enabled && !mobileEnabled) {
         clearStageStyles();
+        updateLogoFrame();
         return;
       }
 
@@ -465,6 +505,7 @@ function DepthStageController() {
           });
         });
 
+        updateLogoFrame();
         return;
       }
 
@@ -524,6 +565,8 @@ function DepthStageController() {
       if (Math.abs(targetProgress - currentProgress) > 0.002 || Math.abs(velocity) > 0.002) {
         scheduleFrame();
       }
+
+      updateLogoFrame();
     };
 
     const scheduleFrame = () => {
@@ -555,6 +598,7 @@ function DepthStageController() {
       reducedMotionQuery?.removeEventListener?.("change", setEnabledState);
       desktopQuery?.removeEventListener?.("change", setEnabledState);
       root.removeAttribute("data-depth-stage");
+      root.removeAttribute("data-logo-frame");
       clearStageStyles();
     };
   }, []);
