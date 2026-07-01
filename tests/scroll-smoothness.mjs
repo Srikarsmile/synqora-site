@@ -74,6 +74,19 @@ const report = await page.evaluate(async () => {
   const secondCopyStyle = screens[1]?.querySelector(".screen-copy")
     ? getComputedStyle(screens[1].querySelector(".screen-copy"))
     : null;
+  const answersIndex = screens.findIndex((screen) => screen.id === "answers");
+  const contactIndex = screens.findIndex((screen) => screen.id === "contact");
+
+  window.scrollTo({ top: window.innerHeight * (contactIndex - 0.5), behavior: "auto" });
+  await new Promise((resolve) => setTimeout(resolve, 320));
+
+  const transitionPoint = document.elementFromPoint(
+    Math.round(window.innerWidth / 2),
+    Math.round(window.innerHeight * 0.72),
+  );
+  const transitionOwner = transitionPoint?.closest(".text-screen")?.id ?? "";
+  const answersRect = screens[answersIndex]?.getBoundingClientRect();
+  const contactRect = screens[contactIndex]?.getBoundingClientRect();
 
   return {
     after,
@@ -96,6 +109,11 @@ const report = await page.evaluate(async () => {
     secondScreenOpacity: secondScreenStyle?.getPropertyValue("--screen-copy-opacity").trim() ?? "",
     secondScreenPosition: secondScreenStyle?.position ?? "",
     sectionSnapAligns,
+    contactTransition: {
+      answersTop: Math.round(answersRect?.top ?? 9999),
+      contactTop: Math.round(contactRect?.top ?? 9999),
+      owner: transitionOwner,
+    },
     viewportHeight: window.innerHeight,
   };
 });
@@ -129,6 +147,9 @@ if (!report.copyTransformAfter || report.copyTransformAfter === "none" || report
 }
 if (Math.abs(report.secondScreenTop) > report.viewportHeight * 0.78) {
   failures.push(`Smooth scroll should move toward the next full-screen section: top=${report.secondScreenTop}.`);
+}
+if (report.contactTransition.contactTop > 96 && report.contactTransition.owner === "contact") {
+  failures.push(`Contact screen should not overlay the previous screen before it reaches the top: ${JSON.stringify(report.contactTransition)}.`);
 }
 
 if (failures.length > 0) {

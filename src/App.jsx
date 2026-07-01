@@ -409,16 +409,17 @@ function DepthScrollController({ panelCount }) {
 
       panels.forEach((panel, index) => {
         const stableDepth = panel.dataset.depthStable === "true";
-        const activeStableDepth = stableDepth && activeIndex === index;
+        const stableDepthLocked = stableDepth && scrollTarget >= index - 0.04;
+        const stableDepthQueued = stableDepth && !stableDepthLocked;
         const rawDistance = index - scrollCurrent;
-        const distance = activeStableDepth ? 0 : rawDistance;
+        const distance = stableDepthLocked ? 0 : rawDistance;
         const absDistance = Math.min(2, Math.abs(distance));
-        const isRenderable = activeStableDepth || Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
+        const isRenderable = stableDepthLocked || Math.abs(index - activeIndex) <= 1 || absDistance < 1.35;
         const restrainedDepth = stableDepth || mobileMotion;
         const cache = panelStyleCaches[index];
         const style = panel.style;
 
-        if (stableDepth) {
+        if (stableDepthLocked) {
           setCachedProperty(style, cache, "--screen-distance", "0.000");
           setCachedProperty(style, cache, "--screen-copy-opacity", "1");
           setCachedProperty(style, cache, "--screen-copy-y", "0px");
@@ -432,7 +433,7 @@ function DepthScrollController({ panelCount }) {
           return;
         }
 
-        if (!isRenderable) {
+        if (!isRenderable || stableDepthQueued) {
           const parkedDistance = index < scrollCurrent ? "-2.000" : "2.000";
           const parkedY = index < scrollCurrent ? "-96px" : "96px";
 
@@ -445,7 +446,7 @@ function DepthScrollController({ panelCount }) {
           setCachedProperty(style, cache, "--screen-ambient-opacity", "0.220");
           setCachedProperty(style, cache, "--depth-field-opacity", "0.100");
           setCachedProperty(style, cache, "--depth-field-y", parkedY);
-          setCachedProperty(style, cache, "--screen-layer", String(70 + index));
+          setCachedProperty(style, cache, "--screen-layer", String(stableDepthQueued ? 60 + index : 70 + index));
           return;
         }
 
@@ -455,12 +456,10 @@ function DepthScrollController({ panelCount }) {
           ? clamp(1 - Math.max(0, absDistance - 0.16) * 1.05, 0, 1)
           : clamp(1 - Math.max(0, absDistance - 0.08) * 1.28, 0, 1);
         const depthScale = 1 - Math.min(absDistance * (restrainedDepth ? 0.032 : 0.065), restrainedDepth ? 0.062 : 0.13);
-        const copyY = activeStableDepth ? 0 : restrainedDepth ? distance * 18 - velocity * 28 : distance * 46 - velocity * 112;
+        const copyY = restrainedDepth ? distance * 18 - velocity * 28 : distance * 46 - velocity * 112;
         const depthZ = -absDistance * (restrainedDepth ? 62 : 190);
-        const layer = activeStableDepth
-          ? 130
-          : 100 + panels.length - Math.round(absDistance * 16);
-        const fieldY = activeStableDepth ? 0 : restrainedDepth ? distance * 14 - velocity * 42 : distance * 30 - velocity * 150;
+        const layer = 100 + panels.length - Math.round(absDistance * 16);
+        const fieldY = restrainedDepth ? distance * 14 - velocity * 42 : distance * 30 - velocity * 150;
 
         setCachedProperty(style, cache, "--screen-distance", distance.toFixed(3));
         setCachedProperty(style, cache, "--screen-copy-opacity", copyOpacity.toFixed(3));
