@@ -79,20 +79,34 @@ await page.waitForTimeout(500);
 const servicesMotionReport = await page.evaluate(async () => {
   const field = document.querySelector("#services .depth-motion-field");
   const copy = document.querySelector("#services .screen-copy");
+  const readMotion = (element) => {
+    const transform = element ? getComputedStyle(element).transform : "";
+    const matrix = transform && transform !== "none" ? new DOMMatrixReadOnly(transform) : null;
+
+    return {
+      transform,
+      x: matrix?.m41 ?? 0,
+      y: matrix?.m42 ?? 0,
+    };
+  };
   const before = {
-    copyTransform: copy ? getComputedStyle(copy).transform : "",
-    fieldTransform: field ? getComputedStyle(field).transform : "",
+    copy: readMotion(copy),
+    field: readMotion(field),
   };
 
   window.scrollBy({ top: 160, behavior: "auto" });
   await new Promise((resolve) => setTimeout(resolve, 140));
 
+  const after = {
+    copy: readMotion(copy),
+    field: readMotion(field),
+  };
+
   return {
+    copyShift: Math.hypot(after.copy.x - before.copy.x, after.copy.y - before.copy.y),
+    fieldShift: Math.hypot(after.field.x - before.field.x, after.field.y - before.field.y),
     before,
-    after: {
-      copyTransform: copy ? getComputedStyle(copy).transform : "",
-      fieldTransform: field ? getComputedStyle(field).transform : "",
-    },
+    after,
     depthStage: document.documentElement.dataset.depthStage ?? "",
   };
 });
@@ -214,11 +228,14 @@ if (servicesReport.orbitAnimationName === "none" || servicesReport.orbitAnimatio
 if (servicesMotionReport.depthStage !== "mobile") {
   failures.push(`Mobile should use the mobile depth stage: ${JSON.stringify(servicesMotionReport)}.`);
 }
-if (servicesMotionReport.before.fieldTransform === servicesMotionReport.after.fieldTransform) {
+if (servicesMotionReport.before.field.transform === servicesMotionReport.after.field.transform) {
   failures.push(`Mobile depth art should react to scroll: ${JSON.stringify(servicesMotionReport)}.`);
 }
-if (servicesMotionReport.before.copyTransform === servicesMotionReport.after.copyTransform) {
+if (servicesMotionReport.before.copy.transform === servicesMotionReport.after.copy.transform) {
   failures.push(`Mobile section copy should subtly drift with scroll: ${JSON.stringify(servicesMotionReport)}.`);
+}
+if (servicesMotionReport.fieldShift < 34 || servicesMotionReport.copyShift < 12) {
+  failures.push(`Mobile depth motion should be visible, not merely detectable: ${JSON.stringify(servicesMotionReport)}.`);
 }
 
 screenCoverage.forEach((screen) => {

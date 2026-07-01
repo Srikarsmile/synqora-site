@@ -1233,26 +1233,58 @@ html[data-depth-stage="active"] .depth-motion-field {
   }
 
   .depth-motion-field {
-    opacity: 0.6;
-    perspective: 780px;
+    opacity: 0.7;
+    perspective: 900px;
     transform: none;
     will-change: transform, opacity;
   }
 
   .depth-motion-orbit {
-    top: 56%;
+    top: 55%;
     left: 50% !important;
     right: auto !important;
     --depth-x: -50%;
     --depth-rotate: 0deg;
-    width: 82vw;
-    height: 42vh;
-    animation: mobile-depth-float 9s ease-in-out infinite alternate;
+    width: 94vw;
+    height: 48vh;
+    animation: mobile-depth-float 7s ease-in-out infinite alternate;
     will-change: transform, opacity;
   }
 
+  .depth-motion-plane,
+  .depth-motion-node {
+    border-color: rgba(255, 255, 255, 0.4);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08)),
+      radial-gradient(circle at 28% 26%, rgba(250, 255, 190, 0.28), transparent 48%);
+  }
+
   .depth-thread-field {
+    display: block;
+    opacity: 0.44;
+    transform: none !important;
+  }
+
+  .depth-thread-line {
+    width: 108vw;
+    height: 1px;
+    opacity: 0.34;
+    animation-duration: 10s;
+  }
+
+  .depth-thread-line-three,
+  .depth-thread-line-four {
     display: none;
+  }
+
+  .depth-thread-line-one {
+    top: 34%;
+    left: -18%;
+  }
+
+  .depth-thread-line-two {
+    top: 67%;
+    right: -18%;
   }
 
   .screen-gradient::before,

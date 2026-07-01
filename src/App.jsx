@@ -443,11 +443,11 @@ function DepthStageController() {
           const centerOffset = ((rect.top + rect.bottom) / 2 - viewportHeight / 2) / viewportHeight;
           const progress = clamp(centerOffset, -1, 1);
           const presence = clamp(1 - Math.abs(progress) * 1.25, 0, 1);
-          const x = clamp(progress * -42, -44, 44);
-          const y = clamp(progress * 34, -36, 36);
-          const rotate = clamp(progress * -4, -4, 4);
-          const scale = 0.96 + presence * 0.08;
-          const opacity = 0.34 + presence * 0.42;
+          const x = clamp(progress * -164, -148, 148);
+          const y = clamp(progress * 128, -116, 116);
+          const rotate = clamp(progress * -10, -10, 10);
+          const scale = 0.9 + presence * 0.16;
+          const opacity = 0.28 + presence * 0.62;
 
           field.style.cssText = [
             `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
@@ -455,8 +455,8 @@ function DepthStageController() {
           ].join("; ");
 
           panel.querySelectorAll(".screen-copy, .selected-work-preview").forEach((element) => {
-            const contentY = clamp(progress * -18, -20, 20);
-            const contentOpacity = 0.78 + presence * 0.22;
+            const contentY = clamp(progress * -76, -56, 56);
+            const contentOpacity = 0.68 + presence * 0.32;
 
             element.style.cssText = [
               `opacity: ${contentOpacity.toFixed(3)}`,
