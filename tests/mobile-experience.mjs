@@ -51,6 +51,7 @@ for (const id of ["hero", "services", "method", "work-exkitchens", "work-holditd
       bottomOwner: sampleId(window.innerHeight - 2),
       height: Math.round(rect?.height ?? 0),
       middleOwner: sampleId(Math.round(window.innerHeight / 2)),
+      position: screen ? getComputedStyle(screen).position : "",
       topOwner: sampleId(2),
       viewportHeight: window.innerHeight,
     };
@@ -193,6 +194,9 @@ screenCoverage.forEach((screen) => {
   }
   if ([screen.topOwner, screen.middleOwner, screen.bottomOwner].some((owner) => owner !== screen.id)) {
     failures.push(`Mobile ${screen.id} should cover the full viewport without another section leaking through: ${JSON.stringify(screen)}.`);
+  }
+  if (screen.position === "sticky") {
+    failures.push(`Mobile ${screen.id} should use normal document flow to avoid footer/form scroll jitter: ${JSON.stringify(screen)}.`);
   }
 });
 

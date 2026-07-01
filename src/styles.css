@@ -1085,6 +1085,11 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --screen-height: 100svh;
+    --screen-fill-height: 100svh;
+  }
+
   html {
     overscroll-behavior-y: auto;
     scroll-behavior: auto;
@@ -1103,7 +1108,13 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
     --screen-title-size: 4.1rem;
     --screen-title-measure: 9.2ch;
     --screen-title-line: 0.96;
+    position: relative;
+    top: auto;
+    z-index: auto;
     padding: 84px 22px 52px;
+    perspective: none;
+    transform-style: flat;
+    will-change: auto;
   }
 
   .text-screen[data-align],
