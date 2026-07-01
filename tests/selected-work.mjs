@@ -98,38 +98,44 @@ const mobilePage = await browser.newPage({
   viewport: { width: 390, height: 844 },
 });
 await mobilePage.goto(baseUrl, { waitUntil: "networkidle" });
-const mobilePanelExists = await mobilePage.locator("#work-exkitchens").count();
-if (mobilePanelExists > 0) {
-  await mobilePage.locator("#work-exkitchens").scrollIntoViewIfNeeded();
-  await mobilePage.waitForTimeout(500);
-}
-const mobileReport = mobilePanelExists === 0 ? { missing: true } : await mobilePage.evaluate(() => {
-  const screen = document.querySelector("#work-exkitchens");
-  const preview = screen?.querySelector(".selected-work-preview");
-  const copy = screen?.querySelector(".screen-copy");
-  const link = screen?.querySelector(".selected-work-link");
-  const rectOf = (element) => {
-    const rect = element?.getBoundingClientRect();
-    return rect
-      ? {
-        bottom: Math.round(rect.bottom),
-        height: Math.round(rect.height),
-        left: Math.round(rect.left),
-        right: Math.round(rect.right),
-        top: Math.round(rect.top),
-        width: Math.round(rect.width),
-      }
-      : null;
-  };
+const mobileReports = [];
+for (const id of ["work-exkitchens", "work-holditdown"]) {
+  const mobilePanelExists = await mobilePage.locator(`#${id}`).count();
+  if (mobilePanelExists > 0) {
+    await mobilePage.locator(`#${id}`).scrollIntoViewIfNeeded();
+    await mobilePage.waitForTimeout(500);
+  }
+  mobileReports.push(mobilePanelExists === 0 ? { id, missing: true } : await mobilePage.evaluate((screenId) => {
+    const screen = document.querySelector(`#${screenId}`);
+    const preview = screen?.querySelector(".selected-work-preview");
+    const copy = screen?.querySelector(".screen-copy");
+    const link = screen?.querySelector(".selected-work-link");
+    const rectOf = (element) => {
+      const rect = element?.getBoundingClientRect();
+      return rect
+        ? {
+          bottom: Math.round(rect.bottom),
+          height: Math.round(rect.height),
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+        }
+        : null;
+    };
 
-  return {
-    copy: rectOf(copy),
-    link: rectOf(link),
-    preview: rectOf(preview),
-    screen: rectOf(screen),
-    viewportHeight: window.innerHeight,
-  };
-});
+    return {
+      copy: rectOf(copy),
+      id: screenId,
+      link: rectOf(link),
+      preview: rectOf(preview),
+      screen: rectOf(screen),
+      title: screen?.querySelector(".screen-title")?.textContent?.trim() ?? "",
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+    };
+  }, id));
+}
 
 await browser.close();
 
@@ -164,18 +170,30 @@ desktopReports.forEach((report) => {
   }
 });
 
-if (!mobileReport.screen || Math.abs(mobileReport.screen.height - mobileReport.viewportHeight) > 2) {
-  failures.push(`Mobile selected work should still be one full screen: ${JSON.stringify(mobileReport)}.`);
-}
-if (!mobileReport.preview || mobileReport.preview.width < 320 || mobileReport.preview.bottom > mobileReport.viewportHeight - 48) {
-  failures.push(`Mobile selected work preview should fit cleanly under the text: ${JSON.stringify(mobileReport)}.`);
-}
-if (!mobileReport.link || mobileReport.link.bottom > mobileReport.viewportHeight - 36) {
-  failures.push(`Mobile selected work live link should stay visible: ${JSON.stringify(mobileReport)}.`);
-}
+mobileReports.forEach((mobileReport) => {
+  if (mobileReport.missing) {
+    failures.push(`Mobile selected work panel is missing: ${mobileReport.id}.`);
+    return;
+  }
+  if (!mobileReport.screen || Math.abs(mobileReport.screen.height - mobileReport.viewportHeight) > 2) {
+    failures.push(`Mobile selected work should still be one full screen: ${JSON.stringify(mobileReport)}.`);
+  }
+  if (!mobileReport.copy || mobileReport.copy.left < 16 || mobileReport.copy.right > mobileReport.viewportWidth - 16) {
+    failures.push(`Mobile selected work copy should not clip horizontally: ${JSON.stringify(mobileReport)}.`);
+  }
+  if (!mobileReport.preview || mobileReport.preview.width < 320 || mobileReport.preview.bottom > mobileReport.viewportHeight - 48) {
+    failures.push(`Mobile selected work preview should fit cleanly under the text: ${JSON.stringify(mobileReport)}.`);
+  }
+  if (mobileReport.preview && (mobileReport.preview.left < 16 || mobileReport.preview.right > mobileReport.viewportWidth - 16)) {
+    failures.push(`Mobile selected work preview should not clip horizontally: ${JSON.stringify(mobileReport)}.`);
+  }
+  if (!mobileReport.link || mobileReport.link.bottom > mobileReport.viewportHeight - 36) {
+    failures.push(`Mobile selected work live link should stay visible: ${JSON.stringify(mobileReport)}.`);
+  }
+});
 
 if (failures.length > 0) {
-  throw new Error(`Selected work failed:\n${failures.join("\n")}\n\n${JSON.stringify({ desktopReports, mobileReport }, null, 2)}`);
+  throw new Error(`Selected work failed:\n${failures.join("\n")}\n\n${JSON.stringify({ desktopReports, mobileReports }, null, 2)}`);
 }
 
 console.log("Selected work passed.");

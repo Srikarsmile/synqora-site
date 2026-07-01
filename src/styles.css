@@ -1179,7 +1179,9 @@ html[data-depth-scroll-state="settling"] .depth-thread-line {
     align-content: center;
     gap: 16px;
     padding-top: 80px;
+    padding-right: 22px;
     padding-bottom: 42px;
+    padding-left: 22px;
   }
 
   .text-screen[data-screen-kind="work"] .screen-copy {
