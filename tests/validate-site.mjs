@@ -14,7 +14,9 @@ const removedAssetPaths = [
 
 const requiredAppTokens = [
   "const textScreens",
+  "const workProjects",
   "const serviceFocusItems",
+  "function SelectedWorkPreview",
   "function ScreenCta",
   "function HeroShaderGradient",
   "function TextScreen",
@@ -69,7 +71,6 @@ const forbiddenTokens = [
   "depth-gallery-card",
   "example-card",
   "brief-form",
-  "<img",
   "<picture",
 ];
 
@@ -81,6 +82,7 @@ const checks = [
   ["App keeps the required text-gradient structure", requiredAppTokens.every((token) => app.includes(token))],
   ["CSS keeps the required full-screen gradient structure", requiredCssTokens.every((token) => css.includes(token))],
   ["Old card/image surfaces removed", forbiddenTokens.every((token) => !app.includes(token) && !css.includes(token))],
+  ["Selected work uses approved local screenshots", app.includes("selected-work-preview") && app.includes("/images/work/exkitchens-desktop.jpg") && app.includes("/images/work/holditdown-desktop.jpg")],
   ["Contact form is the only restored form surface", app.includes("contact-form") && app.includes("function ContactForm")],
   ["Hero has a visible sales CTA", app.includes('cta: "Start a build"') && app.includes('href="#contact"')],
   ["Service screen names concrete offer lanes", app.includes("Websites") && app.includes("AI tools") && app.includes("Automation")],

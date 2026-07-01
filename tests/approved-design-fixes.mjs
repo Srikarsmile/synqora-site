@@ -49,7 +49,7 @@ const heroReport = await page.evaluate(() => {
 });
 
 const sectionReports = [];
-for (const id of ["services", "method", "examples", "answers"]) {
+for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "answers"]) {
   await page.locator(`#${id}`).scrollIntoViewIfNeeded();
   await page.waitForTimeout(620);
   sectionReports.push(await page.evaluate((screenId) => {
@@ -78,6 +78,7 @@ for (const id of ["services", "method", "examples", "answers"]) {
       copy: rectOf(copy),
       copyOpacity: Number.parseFloat(copy ? getComputedStyle(copy).opacity : "0"),
       id: screenId,
+      kind: screen?.getAttribute("data-screen-kind") ?? "",
       note: rectOf(note),
       title: rectOf(title),
       titleFontSize: Number.parseFloat(title ? getComputedStyle(title).fontSize : "0"),
@@ -174,10 +175,13 @@ sectionReports.forEach((section) => {
   if (!section.copy || section.copy.top < 128 || section.copy.bottom > section.viewportHeight - 92) {
     failures.push(`Desktop ${section.id} copy should sit comfortably inside the viewport: ${JSON.stringify(section.copy)}.`);
   }
-  if (!section.title || section.title.width < 620 || section.title.height > section.viewportHeight * 0.48) {
+  const minTitleWidth = section.kind === "work" ? 280 : 620;
+  if (!section.title || section.title.width < minTitleWidth || section.title.height > section.viewportHeight * 0.48) {
     failures.push(`Desktop ${section.id} heading should have a readable measure instead of a narrow tower: ${JSON.stringify(section.title)}.`);
   }
-  if (!section.body || section.body.width < 430 || section.bodyFontSize < 22) {
+  const minBodyWidth = section.kind === "work" ? 340 : 430;
+  const minBodyFontSize = section.kind === "work" ? 19 : 22;
+  if (!section.body || section.body.width < minBodyWidth || section.bodyFontSize < minBodyFontSize) {
     failures.push(`Desktop ${section.id} supporting copy should remain readable under the headline: ${JSON.stringify(section)}.`);
   }
 });

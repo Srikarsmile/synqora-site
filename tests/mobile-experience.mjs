@@ -37,7 +37,7 @@ await page.goto(baseUrl, { waitUntil: "networkidle" });
 await page.waitForTimeout(900);
 
 const screenCoverage = [];
-for (const id of ["hero", "services", "method", "examples", "answers", "contact"]) {
+for (const id of ["hero", "services", "method", "work-exkitchens", "work-holditdown", "answers", "contact"]) {
   await page.locator(`#${id}`).scrollIntoViewIfNeeded();
   await page.waitForTimeout(420);
   screenCoverage.push(await page.evaluate((screenId) => {

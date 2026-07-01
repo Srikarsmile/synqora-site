@@ -100,9 +100,11 @@ if (report.hasStartMarker) failures.push("Flow start marker should be removed.")
 if (report.branchCount > 0) failures.push(`Flow branches should be removed, found ${report.branchCount}.`);
 
 report.screens.forEach((screen, index) => {
-  const expectedAlign = index === 0 ? "center" : index % 2 === 0 ? "left" : "right";
-  if (screen.align !== expectedAlign) {
-    failures.push(`Screen ${index + 1} should align ${expectedAlign}, found ${screen.align}.`);
+  if (index === 0 && screen.align !== "center") {
+    failures.push(`Hero screen should align center, found ${screen.align}.`);
+  }
+  if (index > 0 && !["left", "right"].includes(screen.align)) {
+    failures.push(`Screen ${index + 1} should choose a side, found ${screen.align}.`);
   }
   if (!screen.title) failures.push(`Screen ${index + 1} is missing title text.`);
   if (screen.align === "center" && Math.abs(screen.centerX - report.viewportWidth / 2) > report.viewportWidth * 0.08) {

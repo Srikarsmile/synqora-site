@@ -18,7 +18,9 @@ const requiredContentTokens = [
   "automations",
   "internal tools",
   "Clear strategy. Fast build. Practical handoff.",
-  "From idea to working product.",
+  "Selected work",
+  "ExKitchens",
+  "Hold It Down",
   "Tell us what you want to build.",
   "info@synqora.tech",
   "Synqora AI | Premium Websites and AI Systems",
@@ -51,7 +53,6 @@ requiredContentTokens.forEach((token) => {
   "example-card",
   "brief-form",
   "<picture",
-  "<img",
   "getBoundingClientRect",
   "--screen-presence",
   "AI training and implementation",
@@ -88,7 +89,7 @@ const report = await page.evaluate(() => {
   const screens = [...document.querySelectorAll(".text-screen")];
   const wordmark = document.querySelector(".wordmark");
   const hero = document.querySelector("#hero");
-  const hasForbiddenUi = Boolean(document.querySelector("button:not(.contact-submit), nav, img, picture, .screen-nav, .hero-tool-visual, .depth-gallery-card, .example-card, .brief-form"));
+  const hasForbiddenUi = Boolean(document.querySelector("button:not(.contact-submit), nav, img:not(.selected-work-image), picture, .screen-nav, .hero-tool-visual, .depth-gallery-card, .example-card, .brief-form"));
   const readScreen = (screen) => {
     const rect = screen.getBoundingClientRect();
     const style = getComputedStyle(screen);
@@ -153,7 +154,7 @@ const report = await page.evaluate(() => {
 });
 
 const desktopFitReports = [];
-for (const id of ["services", "method", "examples", "answers", "contact"]) {
+for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "answers", "contact"]) {
   await page.locator(`#${id}`).scrollIntoViewIfNeeded();
   await page.waitForTimeout(420);
   desktopFitReports.push(await page.evaluate((screenId) => {
@@ -177,6 +178,7 @@ for (const id of ["services", "method", "examples", "answers", "contact"]) {
     return {
       id: screenId,
       copyGroupBox: rectOf(copyGroup),
+      kind: screen?.getAttribute("data-screen-kind") ?? "",
       titleBox: rectOf(title),
       viewportHeight: window.innerHeight,
       viewportWidth: window.innerWidth,
@@ -202,7 +204,7 @@ const isLightText = (color) => {
   return r > 210 && g > 210 && b > 210;
 };
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
-if (report.forbiddenUi) failures.push("Rendered page still includes buttons, navigation, images, forms, or card surfaces.");
+if (report.forbiddenUi) failures.push("Rendered page still includes buttons, navigation, unapproved images, forms, or card surfaces.");
 if (report.screenCount < 5) failures.push(`Expected at least 5 text screens, found ${report.screenCount}.`);
 if (!report.wordmarkVisible) failures.push("Centered wordmark text is missing.");
 if (report.hero.title !== "Websites and AI systems.") {
@@ -230,7 +232,8 @@ desktopFitReports.forEach((screen) => {
     if (screen.titleBox.height > screen.viewportHeight * 0.52) {
       failures.push(`Desktop ${screen.id} heading wraps into a too-tall column: ${JSON.stringify(screen.titleBox)}.`);
     }
-    if (screen.titleBox.width < 520) {
+    const minTitleWidth = screen.kind === "work" ? 280 : 520;
+    if (screen.titleBox.width < minTitleWidth) {
       failures.push(`Desktop ${screen.id} heading measure is too narrow to read comfortably: ${JSON.stringify(screen.titleBox)}.`);
     }
   }

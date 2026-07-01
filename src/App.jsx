@@ -3,6 +3,36 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from
 const CONTACT_EMAIL = "info@synqora.tech";
 const CONTACT_EMAIL_HREF = "mailto:info@synqora.tech";
 const serviceFocusItems = ["Websites", "AI tools", "Automation"];
+const workProjects = [
+  {
+    id: "work-exkitchens",
+    label: "ExKitchens",
+    eyebrow: "Selected work",
+    title: "ExKitchens",
+    copy: "A premium marketplace for ex-display kitchens, built around trust, product discovery, and upfront savings.",
+    note: "Luxury marketplace. Product listings. Sustainability story.",
+    url: "https://www.exkitchens.com",
+    image: "/images/work/exkitchens-desktop.jpg",
+    imageAlt: "ExKitchens live website preview",
+    kind: "work",
+    tone: "work",
+    align: "left",
+  },
+  {
+    id: "work-holditdown",
+    label: "Hold It Down",
+    eyebrow: "Selected work",
+    title: "Hold It Down",
+    copy: "A community organisation site for programmes, events, donations, impact, and a clear public mission.",
+    note: "CIC website. Programmes. Events. Donation flow.",
+    url: "https://www.holditdown.uk",
+    image: "/images/work/holditdown-desktop.jpg",
+    imageAlt: "Hold It Down live website preview",
+    kind: "work",
+    tone: "workAlt",
+    align: "right",
+  },
+];
 
 const LazyShaderGradientCanvas = lazy(() => (
   import("@shadergradient/react").then((module) => ({ default: module.ShaderGradientCanvas }))
@@ -43,16 +73,7 @@ const textScreens = [
     tone: "method",
     align: "left",
   },
-  {
-    id: "examples",
-    label: "Examples",
-    eyebrow: "Examples",
-    title: "From idea to working product.",
-    copy: "A better website, a smarter enquiry flow, an AI assistant for your team, a private knowledge tool, or an automation that removes repeated work.",
-    note: "Sharper presence. Smarter operations.",
-    tone: "examples",
-    align: "right",
-  },
+  ...workProjects,
   {
     id: "answers",
     label: "Answers",
@@ -144,6 +165,26 @@ function ScreenCta({ children }) {
   return (
     <a className="screen-cta" href="#contact">
       {children}
+    </a>
+  );
+}
+
+function SelectedWorkPreview({ project }) {
+  return (
+    <a
+      className="selected-work-preview"
+      href={project.url}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Visit ${project.title}`}
+    >
+      <img
+        className="selected-work-image"
+        src={project.image}
+        alt={project.imageAlt}
+        loading="lazy"
+        decoding="async"
+      />
     </a>
   );
 }
@@ -539,6 +580,7 @@ function TextScreen({ screen, index }) {
     <section
       className={`text-screen screen-gradient screen-gradient-${screen.tone}`}
       data-align={screen.align}
+      data-screen-kind={screen.kind}
       data-depth-stable={screen.id === "contact" ? "true" : undefined}
       id={screen.id}
       aria-labelledby={titleId}
@@ -547,6 +589,7 @@ function TextScreen({ screen, index }) {
       <DepthMotionField align={screen.align} tone={screen.tone} />
       <div className="screen-ambient" aria-hidden="true" />
       {screen.id === "contact" ? <ContactForm /> : null}
+      {screen.kind === "work" ? <SelectedWorkPreview project={screen} /> : null}
       <div className="screen-copy">
         <p className="screen-eyebrow">{screen.eyebrow}</p>
         <Heading className="screen-title" id={titleId}>
@@ -564,6 +607,11 @@ function TextScreen({ screen, index }) {
         ) : null}
         {screen.note ? (
           <p className="screen-note">{screen.note === CONTACT_EMAIL ? <EmailLink /> : screen.note}</p>
+        ) : null}
+        {screen.kind === "work" ? (
+          <a className="selected-work-link" href={screen.url} target="_blank" rel="noreferrer">
+            Visit live site
+          </a>
         ) : null}
         {screen.cta ? <ScreenCta>{screen.cta}</ScreenCta> : null}
       </div>
