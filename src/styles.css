@@ -1233,10 +1233,10 @@ html[data-depth-stage="active"] .depth-motion-field {
   }
 
   .depth-motion-field {
-    opacity: 0.46;
+    opacity: 0.6;
     perspective: 780px;
     transform: none;
-    will-change: auto;
+    will-change: transform, opacity;
   }
 
   .depth-motion-orbit {

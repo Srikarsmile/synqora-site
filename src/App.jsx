@@ -360,6 +360,7 @@ function DepthStageController() {
 
     let frame = 0;
     let enabled = false;
+    let mobileEnabled = false;
     let viewportHeight = Math.max(window.innerHeight, 1);
     let stageTop = stage.offsetTop;
     let stageTravel = Math.max(stage.offsetHeight - viewportHeight, 1);
@@ -406,11 +407,18 @@ function DepthStageController() {
 
     const setEnabledState = () => {
       enabled = prefersDesktopDepth() && !prefersReducedMotion();
-      root.setAttribute("data-depth-stage", enabled ? "active" : "native");
+      mobileEnabled = !prefersDesktopDepth() && !prefersReducedMotion();
+      root.setAttribute("data-depth-stage", enabled ? "active" : mobileEnabled ? "mobile" : "native");
       collectStageGeometry();
 
-      if (!enabled) {
+      if (!enabled && !mobileEnabled) {
         clearStageStyles();
+        return;
+      }
+
+      if (mobileEnabled) {
+        clearPanelStyles();
+        scheduleFrame();
         return;
       }
 
@@ -424,7 +432,31 @@ function DepthStageController() {
     const render = () => {
       frame = 0;
 
-      if (!enabled) return;
+      if (!enabled && !mobileEnabled) return;
+
+      if (mobileEnabled) {
+        viewportHeight = Math.max(window.innerHeight, 1);
+
+        fields.forEach(({ field }, index) => {
+          const panel = panels[index];
+          const rect = panel.getBoundingClientRect();
+          const centerOffset = ((rect.top + rect.bottom) / 2 - viewportHeight / 2) / viewportHeight;
+          const progress = clamp(centerOffset, -1, 1);
+          const presence = clamp(1 - Math.abs(progress) * 1.25, 0, 1);
+          const x = clamp(progress * -42, -44, 44);
+          const y = clamp(progress * 34, -36, 36);
+          const rotate = clamp(progress * -4, -4, 4);
+          const scale = 0.96 + presence * 0.08;
+          const opacity = 0.34 + presence * 0.42;
+
+          field.style.cssText = [
+            `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
+            `opacity: ${opacity.toFixed(3)}`,
+          ].join("; ");
+        });
+
+        return;
+      }
 
       targetProgress = getProgressFromScroll();
       currentProgress = lerp(currentProgress, targetProgress, 0.42);
@@ -485,7 +517,7 @@ function DepthStageController() {
     };
 
     const scheduleFrame = () => {
-      if (frame || !enabled) return;
+      if (frame || (!enabled && !mobileEnabled)) return;
       frame = window.requestAnimationFrame(render);
     };
 

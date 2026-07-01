@@ -102,7 +102,7 @@ const report = await page.evaluate(async () => {
 await browser.close();
 
 if (report.rootDepthDataset) failures.push(`Native scroll should not expose depth dataset: ${JSON.stringify(report)}.`);
-if (report.htmlDepthStage !== "native") failures.push(`Mobile should disable the bounded depth stage: ${JSON.stringify(report)}.`);
+if (report.htmlDepthStage !== "mobile") failures.push(`Mobile should use the lightweight native-flow depth stage: ${JSON.stringify(report)}.`);
 if (report.htmlInlineStyle) failures.push(`Native scroll should not mutate root inline styles: ${JSON.stringify(report)}.`);
 if (report.screenInlineStyleCount > 0 || report.contactInlineStyle) {
   failures.push(`Native scroll should not write per-section inline styles: ${JSON.stringify(report)}.`);
