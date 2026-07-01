@@ -94,6 +94,8 @@ const textScreens = [
     align: "right",
   },
 ];
+const storyScreens = textScreens.filter((screen) => screen.id !== "contact");
+const contactScreen = textScreens.find((screen) => screen.id === "contact");
 
 function EmailLink() {
   return (
@@ -336,29 +338,34 @@ function DepthMotionField({ align, tone }) {
   );
 }
 
-function DepthAtmosphereController() {
+function DepthStageController() {
   useEffect(() => {
     const root = document.documentElement;
+    const stage = document.querySelector(".depth-scroll-stage");
     const reducedMotionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     const desktopQuery = window.matchMedia?.("(min-width: 761px)");
-    const fields = [...document.querySelectorAll(".text-screen:not(#contact) .depth-motion-field")]
-      .map((field) => ({
-        align: field.getAttribute("data-depth-align") ?? "center",
-        field,
-        section: field.closest(".text-screen"),
-        height: 1,
-        top: 0,
-      }))
-      .filter((entry) => entry.section);
+    const panels = [...document.querySelectorAll(".depth-scroll-stage .text-screen")];
+    const fields = [];
+    for (const panel of panels) {
+      const field = panel.querySelector(".depth-motion-field");
+      if (field) {
+        fields.push({
+          align: panel.getAttribute("data-align") ?? "center",
+          field,
+        });
+      }
+    }
 
-    if (fields.length === 0) return undefined;
+    if (!stage || panels.length === 0 || fields.length === 0) return undefined;
 
     let frame = 0;
     let enabled = false;
     let viewportHeight = Math.max(window.innerHeight, 1);
-    let targetScroll = window.scrollY;
-    let currentScroll = targetScroll;
-    let previousScroll = currentScroll;
+    let stageTop = stage.offsetTop;
+    let stageTravel = Math.max(stage.offsetHeight - viewportHeight, 1);
+    let targetProgress = 0;
+    let currentProgress = 0;
+    let previousProgress = 0;
     let velocity = 0;
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -368,32 +375,45 @@ function DepthAtmosphereController() {
 
     const clearFieldStyles = () => {
       fields.forEach(({ field }) => {
-        field.style.removeProperty("opacity");
-        field.style.removeProperty("transform");
+        field.removeAttribute("style");
       });
     };
 
-    const collectFieldGeometry = () => {
-      viewportHeight = Math.max(window.innerHeight, 1);
-      fields.forEach((entry) => {
-        entry.top = entry.section.offsetTop;
-        entry.height = Math.max(entry.section.offsetHeight, viewportHeight);
+    const clearPanelStyles = () => {
+      panels.forEach((panel) => {
+        panel.removeAttribute("style");
+        panel.removeAttribute("inert");
       });
+    };
+
+    const collectStageGeometry = () => {
+      viewportHeight = Math.max(window.innerHeight, 1);
+      stageTop = stage.offsetTop;
+      stageTravel = Math.max(stage.offsetHeight - viewportHeight, 1);
+    };
+
+    const getProgressFromScroll = () => (
+      clamp((window.scrollY - stageTop) / stageTravel, 0, 1) * (panels.length - 1)
+    );
+
+    const clearStageStyles = () => {
+      clearPanelStyles();
+      clearFieldStyles();
     };
 
     const setEnabledState = () => {
       enabled = prefersDesktopDepth() && !prefersReducedMotion();
-      root.setAttribute("data-depth-atmosphere", enabled ? "active" : "native");
-      collectFieldGeometry();
+      root.setAttribute("data-depth-stage", enabled ? "active" : "native");
+      collectStageGeometry();
 
       if (!enabled) {
-        clearFieldStyles();
+        clearStageStyles();
         return;
       }
 
-      targetScroll = window.scrollY;
-      currentScroll = targetScroll;
-      previousScroll = currentScroll;
+      targetProgress = getProgressFromScroll();
+      currentProgress = targetProgress;
+      previousProgress = currentProgress;
       velocity = 0;
       scheduleFrame();
     };
@@ -403,29 +423,49 @@ function DepthAtmosphereController() {
 
       if (!enabled) return;
 
-      targetScroll = window.scrollY;
-      currentScroll = lerp(currentScroll, targetScroll, 0.18);
-      velocity = lerp(velocity, currentScroll - previousScroll, 0.16);
-      previousScroll = currentScroll;
+      targetProgress = getProgressFromScroll();
+      currentProgress = lerp(currentProgress, targetProgress, 0.24);
+      velocity = lerp(velocity, currentProgress - previousProgress, 0.18);
+      previousProgress = currentProgress;
 
-      const normalizedVelocity = clamp(velocity / viewportHeight, -0.9, 0.9);
+      const normalizedVelocity = clamp(velocity, -0.9, 0.9);
 
-      fields.forEach(({ align, field, top }) => {
-        const distance = (top - currentScroll) / viewportHeight;
+      panels.forEach((panel, index) => {
+        const distance = index - currentProgress;
         const absDistance = Math.abs(distance);
-        const presence = clamp(1 - absDistance * 0.62, 0, 1);
+        const presence = clamp(1 - absDistance * 0.72, 0, 1);
+        const x = clamp(distance * -76 + normalizedVelocity * 42, -130, 130);
+        const y = clamp(distance * 38 + normalizedVelocity * -22, -82, 82);
+        const scale = 0.93 + presence * 0.07;
+        const opacity = clamp(presence * 1.12, 0, 1);
+
+        panel.style.cssText = [
+          `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)})`,
+          `opacity: ${opacity.toFixed(3)}`,
+          `pointer-events: ${absDistance < 0.52 ? "auto" : "none"}`,
+          `visibility: ${opacity > 0.03 ? "visible" : "hidden"}`,
+        ].join("; ");
+        panel.toggleAttribute("inert", absDistance >= 0.62);
+      });
+
+      fields.forEach(({ align, field }, index) => {
+        const distance = index - currentProgress;
+        const absDistance = Math.abs(distance);
+        const presence = clamp(1 - absDistance * 0.54, 0, 1);
         const side = align === "right" ? -1 : align === "left" ? 1 : 0.25;
-        const x = clamp((distance * -112 + normalizedVelocity * 98) * side, -138, 138);
-        const y = clamp(distance * -68 + normalizedVelocity * -52, -108, 108);
-        const rotate = clamp(distance * 7 + normalizedVelocity * 14, -14, 14);
+        const x = clamp((distance * -142 + normalizedVelocity * 118) * side, -168, 168);
+        const y = clamp(distance * -86 + normalizedVelocity * -62, -128, 128);
+        const rotate = clamp(distance * 9 + normalizedVelocity * 16, -16, 16);
         const scale = 0.94 + presence * 0.09;
         const opacity = 0.32 + presence * 0.6;
 
-        field.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
-        field.style.opacity = opacity.toFixed(3);
+        field.style.cssText = [
+          `transform: translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotateX(58deg) rotateZ(${rotate.toFixed(2)}deg) scale(${scale.toFixed(3)})`,
+          `opacity: ${opacity.toFixed(3)}`,
+        ].join("; ");
       });
 
-      if (Math.abs(targetScroll - currentScroll) > 0.7 || Math.abs(velocity) > 0.08) {
+      if (Math.abs(targetProgress - currentProgress) > 0.002 || Math.abs(velocity) > 0.002) {
         scheduleFrame();
       }
     };
@@ -436,12 +476,12 @@ function DepthAtmosphereController() {
     };
 
     const handleScroll = () => {
-      targetScroll = window.scrollY;
+      targetProgress = getProgressFromScroll();
       scheduleFrame();
     };
 
     const handleResize = () => {
-      collectFieldGeometry();
+      collectStageGeometry();
       handleScroll();
     };
 
@@ -458,8 +498,8 @@ function DepthAtmosphereController() {
       window.removeEventListener("resize", handleResize);
       reducedMotionQuery?.removeEventListener?.("change", setEnabledState);
       desktopQuery?.removeEventListener?.("change", setEnabledState);
-      root.removeAttribute("data-depth-atmosphere");
-      clearFieldStyles();
+      root.removeAttribute("data-depth-stage");
+      clearStageStyles();
     };
   }, []);
 
@@ -767,15 +807,22 @@ function CrowdFooter() {
 export function App() {
   return (
     <div className="site-shell">
-      <DepthAtmosphereController />
+      <DepthStageController />
       <header className="site-header">
         <p className="wordmark">Synqora</p>
       </header>
 
       <main>
-        {textScreens.map((screen, index) => (
-          <TextScreen screen={screen} index={index} key={screen.id} />
-        ))}
+        <div className="depth-scroll-stage" aria-label="Synqora story">
+          <div className="depth-scroll-sticky">
+            {storyScreens.map((screen, index) => (
+              <TextScreen screen={screen} index={index} key={screen.id} />
+            ))}
+          </div>
+        </div>
+        {contactScreen ? (
+          <TextScreen screen={contactScreen} index={textScreens.indexOf(contactScreen)} />
+        ) : null}
       </main>
       <CrowdFooter />
     </div>

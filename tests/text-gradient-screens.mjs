@@ -91,7 +91,6 @@ const report = await page.evaluate(() => {
   const hero = document.querySelector("#hero");
   const hasForbiddenUi = Boolean(document.querySelector("button:not(.contact-submit), nav, img:not(.selected-work-image), picture, .screen-nav, .hero-tool-visual, .depth-gallery-card, .example-card, .brief-form"));
   const readScreen = (screen) => {
-    const rect = screen.getBoundingClientRect();
     const style = getComputedStyle(screen);
     const copyGroup = screen.querySelector(".screen-copy");
     const title = screen.querySelector(".screen-title");
@@ -115,7 +114,7 @@ const report = await page.evaluate(() => {
       backgroundImage: style.backgroundImage,
       copyGroupBox: rectOf(copyGroup),
       copyColor: copy ? getComputedStyle(copy).color : "",
-      height: Math.round(rect.height),
+      height: Math.round(screen.offsetHeight),
       id: screen.id,
       noteColor: note ? getComputedStyle(note).color : "",
       title: title?.textContent?.trim() ?? "",
@@ -155,8 +154,20 @@ const report = await page.evaluate(() => {
 
 const desktopFitReports = [];
 for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "answers", "contact"]) {
-  await page.locator(`#${id}`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(420);
+  if (id === "contact") {
+    await page.locator("#contact").scrollIntoViewIfNeeded();
+  } else {
+    await page.evaluate((screenId) => {
+      const panels = [...document.querySelectorAll(".depth-scroll-stage .text-screen")];
+      const stage = document.querySelector(".depth-scroll-stage");
+      const panelIndex = panels.findIndex((panel) => panel.id === screenId);
+      window.scrollTo({
+        top: (stage?.offsetTop ?? 0) + Math.max(0, panelIndex) * window.innerHeight,
+        behavior: "auto",
+      });
+    }, id);
+  }
+  await page.waitForTimeout(760);
   desktopFitReports.push(await page.evaluate((screenId) => {
     const screen = document.getElementById(screenId);
     const copyGroup = screen?.querySelector(".screen-copy");

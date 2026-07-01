@@ -31,15 +31,22 @@ const staticFailures = [];
   "framer-motion",
   "useScroll",
   "useTransform",
-  "requestAnimationFrame(render)",
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
     staticFailures.push(`Depth motion should stay compositor/CSS-driven, found: ${token}`);
   }
 });
 
+if (!app.includes("function DepthStageController") || !app.includes("requestAnimationFrame(render)")) {
+  staticFailures.push("Desktop depth should be driven by the bounded stage controller.");
+}
+
+if (app.includes("function DepthScrollController") || app.includes("data-depth-scroll-state")) {
+  staticFailures.push("Depth motion should not reintroduce the old global scroll controller.");
+}
+
 if (!app.includes('window.addEventListener("scroll", handleScroll, { passive: true })')) {
-  staticFailures.push("Depth motion should use a passive scroll listener to schedule idle-safe frames.");
+  staticFailures.push("Depth stage should use a passive scroll listener to schedule compositor-safe frames.");
 }
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
@@ -104,4 +111,4 @@ if (failures.length > 0) {
   throw new Error(`Depth motion layout failed:\n${failures.join("\n")}\n\n${JSON.stringify(report, null, 2)}`);
 }
 
-console.log(`Depth motion layout passed: ${report.fieldCount} CSS-driven depth fields.`);
+console.log(`Depth motion layout passed: ${report.fieldCount} depth fields inside the bounded stage system.`);

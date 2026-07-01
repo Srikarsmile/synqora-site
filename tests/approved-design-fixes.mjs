@@ -50,8 +50,16 @@ const heroReport = await page.evaluate(() => {
 
 const sectionReports = [];
 for (const id of ["services", "method", "work-exkitchens", "work-holditdown", "answers"]) {
-  await page.locator(`#${id}`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(620);
+  await page.evaluate((screenId) => {
+    const panels = [...document.querySelectorAll(".depth-scroll-stage .text-screen")];
+    const stage = document.querySelector(".depth-scroll-stage");
+    const panelIndex = panels.findIndex((panel) => panel.id === screenId);
+    window.scrollTo({
+      top: (stage?.offsetTop ?? 0) + Math.max(0, panelIndex) * window.innerHeight,
+      behavior: "auto",
+    });
+  }, id);
+  await page.waitForTimeout(760);
   sectionReports.push(await page.evaluate((screenId) => {
     const screen = document.getElementById(screenId);
     const copy = screen?.querySelector(".screen-copy");

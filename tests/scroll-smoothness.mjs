@@ -19,7 +19,6 @@ const failures = [];
   "--screen-copy-opacity",
   "--screen-distance",
   "--depth-scroll-current",
-  "position: sticky",
   "scroll-snap-align",
 ].forEach((token) => {
   if (app.includes(token) || css.includes(token)) {
@@ -33,12 +32,14 @@ const failures = [];
   ".contact-form",
   ".site-crowd-footer",
   "scroll-snap-type: none",
-  "function DepthAtmosphereController",
-  "data-depth-atmosphere",
+  "function DepthStageController",
+  "data-depth-stage",
+  ".depth-scroll-stage",
+  ".depth-scroll-sticky",
   ".depth-motion-field",
 ].forEach((token) => {
   if (!app.includes(token) && !css.includes(token)) {
-    failures.push(`Missing native full-screen scroll token: ${token}`);
+    failures.push(`Missing bounded depth-stage token: ${token}`);
   }
 });
 
@@ -58,25 +59,59 @@ await page.goto(baseUrl, { waitUntil: "networkidle" });
 await page.waitForTimeout(700);
 
 const layoutReport = await page.evaluate(() => {
-  const screens = [...document.querySelectorAll(".text-screen")];
+  const stage = document.querySelector(".depth-scroll-stage");
+  const sticky = document.querySelector(".depth-scroll-sticky");
+  const storyScreens = [...document.querySelectorAll(".depth-scroll-stage .text-screen")];
+  const contact = document.querySelector("#contact");
   const footer = document.querySelector(".site-crowd-footer");
   const fields = [...document.querySelectorAll(".text-screen:not(#contact) .depth-motion-field")];
+  const rectOf = (element) => {
+    const rect = element?.getBoundingClientRect();
+    return rect
+      ? {
+        height: Math.round(rect.height),
+        top: Math.round(rect.top),
+      }
+      : null;
+  };
 
   return {
-    depthAtmosphere: document.documentElement.dataset.depthAtmosphere ?? "",
+    contactInlineStyle: contact?.getAttribute("style") ?? "",
+    contactPosition: contact ? getComputedStyle(contact).position : "",
+    depthStage: document.documentElement.dataset.depthStage ?? "",
     depthFieldInlineStyles: fields.filter((field) => field.getAttribute("style")).length,
     depthMaxOpacity: Math.max(...fields.map((field) => Number.parseFloat(getComputedStyle(field).opacity) || 0)),
     depthOrbitOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".depth-motion-orbit")).opacity) || 0,
     depthThreadOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".depth-thread-field")).opacity) || 0,
+    expectedStageHeight: window.innerHeight * storyScreens.length,
     footerPosition: footer ? getComputedStyle(footer).position : "",
     rootDataset: document.documentElement.dataset.depthScroll ?? "",
     rootSnapType: getComputedStyle(document.documentElement).scrollSnapType,
-    screenInlineStyleCount: screens.filter((screen) => screen.getAttribute("style")).length,
-    screenHeights: screens.map((screen) => Math.round(screen.getBoundingClientRect().height)),
-    screenPositions: screens.map((screen) => getComputedStyle(screen).position),
+    stage: rectOf(stage),
+    sticky: rectOf(sticky),
+    stickyPosition: sticky ? getComputedStyle(sticky).position : "",
+    storyInlineStyleCount: storyScreens.filter((screen) => screen.getAttribute("style")).length,
+    storyPositions: storyScreens.map((screen) => getComputedStyle(screen).position),
+    storyScreenCount: storyScreens.length,
+    storyScreenHeights: storyScreens.map((screen) => Math.round(screen.offsetHeight)),
     viewportHeight: window.innerHeight,
   };
 });
+
+const stageOwnerReport = [];
+for (let index = 0; index < 6; index += 1) {
+  await page.evaluate((stageIndex) => {
+    const stage = document.querySelector(".depth-scroll-stage");
+    window.scrollTo({ top: (stage?.offsetTop ?? 0) + stageIndex * window.innerHeight, behavior: "auto" });
+  }, index);
+  await page.waitForTimeout(520);
+  stageOwnerReport.push(await page.evaluate(() => (
+    document.elementFromPoint(
+      Math.round(window.innerWidth / 2),
+      Math.round(window.innerHeight / 2),
+    )?.closest(".text-screen")?.id ?? ""
+  )));
+}
 
 await page.locator(".site-crowd-footer").scrollIntoViewIfNeeded();
 await page.waitForTimeout(350);
@@ -122,25 +157,34 @@ await browser.close();
 
 if (errors.length > 0) failures.push(`Console/page errors: ${errors.join(" | ")}`);
 if (layoutReport.rootDataset) failures.push(`Root should not expose depth-scroll state: ${layoutReport.rootDataset}.`);
-if (layoutReport.depthAtmosphere !== "active") failures.push(`Decorative depth atmosphere should be active: ${layoutReport.depthAtmosphere}.`);
+if (layoutReport.depthStage !== "active") failures.push(`Desktop bounded depth stage should be active: ${layoutReport.depthStage}.`);
 if (layoutReport.rootSnapType !== "none") failures.push(`Root scroll snap should stay disabled: ${layoutReport.rootSnapType}.`);
-if (layoutReport.screenPositions.some((position) => position !== "relative")) {
-  failures.push(`Text screens should be normal flow sections: ${layoutReport.screenPositions.join(", ")}.`);
+if (!layoutReport.stage || Math.abs(layoutReport.stage.height - layoutReport.expectedStageHeight) > 2) {
+  failures.push(`Depth stage should provide one native scroll screen per story panel: ${JSON.stringify(layoutReport)}.`);
 }
-if (layoutReport.screenInlineStyleCount > 0) {
-  failures.push(`Depth atmosphere should not write inline styles on content sections: ${JSON.stringify(layoutReport)}.`);
+if (!layoutReport.sticky || Math.abs(layoutReport.sticky.height - layoutReport.viewportHeight) > 2 || layoutReport.stickyPosition !== "sticky") {
+  failures.push(`Depth stage should use one bounded sticky viewport: ${JSON.stringify(layoutReport)}.`);
+}
+if (layoutReport.storyPositions.some((position) => position !== "absolute")) {
+  failures.push(`Story panels should be stage-managed absolute panels on desktop: ${JSON.stringify(layoutReport.storyPositions)}.`);
+}
+if (layoutReport.contactPosition !== "relative" || layoutReport.footerPosition !== "relative" || layoutReport.contactInlineStyle) {
+  failures.push(`Contact and footer must stay native, not stage-managed: ${JSON.stringify(layoutReport)}.`);
+}
+if (layoutReport.storyInlineStyleCount < layoutReport.storyScreenCount) {
+  failures.push(`Depth stage should write layout transforms only to story panels: ${JSON.stringify(layoutReport)}.`);
 }
 if (layoutReport.depthFieldInlineStyles < 1) {
-  failures.push(`Depth atmosphere should animate decorative fields only: ${JSON.stringify(layoutReport)}.`);
+  failures.push(`Depth stage should still animate decorative fields: ${JSON.stringify(layoutReport)}.`);
 }
 if (layoutReport.depthMaxOpacity < 0.82 || layoutReport.depthOrbitOpacity < 0.72 || layoutReport.depthThreadOpacity < 0.82) {
   failures.push(`Decorative depth should be visible enough to read as depth, not a flat gradient: ${JSON.stringify(layoutReport)}.`);
 }
-if (layoutReport.screenHeights.some((height) => Math.abs(height - layoutReport.viewportHeight) > 2)) {
-  failures.push(`Every text screen should cover one viewport: ${JSON.stringify(layoutReport)}.`);
+if (layoutReport.storyScreenHeights.some((height) => Math.abs(height - layoutReport.viewportHeight) > 2)) {
+  failures.push(`Every story panel should cover one viewport: ${JSON.stringify(layoutReport)}.`);
 }
-if (layoutReport.footerPosition !== "relative") {
-  failures.push(`Footer should be a normal flow section: ${layoutReport.footerPosition}.`);
+if (stageOwnerReport.join("|") !== "hero|services|method|work-exkitchens|work-holditdown|answers") {
+  failures.push(`Depth stage should activate the expected panel as the user scrolls: ${JSON.stringify(stageOwnerReport)}.`);
 }
 if (!contactReport.contact || Math.abs(contactReport.contact.top) > 4) {
   failures.push(`Contact should scroll back to the top cleanly: ${JSON.stringify(contactReport)}.`);

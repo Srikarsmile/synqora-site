@@ -88,13 +88,15 @@ const checks = [
   ["Service screen names concrete offer lanes", app.includes("Websites") && app.includes("AI tools") && app.includes("Automation")],
   ["Contact screen includes a response-time trust cue", app.includes("We reply within 24 hours")],
   [
-    "Sections use native full-screen scroll with decorative-only depth",
+    "Desktop depth uses a bounded stage while contact/footer stay native",
     !app.includes("DepthScrollController")
       && !app.includes("data-depth-scroll-state")
       && !app.includes("Element.prototype.scrollIntoView")
-      && app.includes("function DepthAtmosphereController")
-      && app.includes("data-depth-atmosphere")
-      && !css.includes("position: sticky")
+      && app.includes("function DepthStageController")
+      && app.includes("data-depth-stage")
+      && css.includes(".depth-scroll-stage")
+      && css.includes(".depth-scroll-sticky")
+      && css.includes("position: sticky")
       && !css.includes("scroll-snap-align")
       && !app.includes("getBoundingClientRect")
       && css.includes("height: var(--screen-height)"),

@@ -47,6 +47,7 @@
   --footer-paper: #fff;
   --font-display: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Arial, sans-serif;
   --font-body: "Helvetica Neue Synqora", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif;
+  --depth-stage-height: 600svh;
   --screen-height: 100svh;
   --screen-fill-height: 100svh;
 }
@@ -183,6 +184,75 @@ body {
   padding-left: 42px;
 }
 
+.depth-scroll-stage {
+  position: relative;
+  z-index: 1;
+  height: var(--depth-stage-height);
+  min-height: var(--depth-stage-height);
+  overflow: clip;
+  contain: layout paint style;
+  isolation: isolate;
+  background: var(--paper);
+}
+
+.depth-scroll-sticky {
+  position: sticky;
+  top: 0;
+  height: var(--screen-height);
+  min-height: var(--screen-height);
+  overflow: hidden;
+  contain: layout paint style;
+  isolation: isolate;
+}
+
+.depth-scroll-stage .text-screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: var(--screen-height);
+  min-height: var(--screen-height);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 34px, 0) scale(0.96);
+  will-change: transform, opacity;
+}
+
+.depth-scroll-stage .text-screen:first-child {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+html[data-depth-stage="active"] .depth-scroll-stage .text-screen {
+  will-change: transform, opacity;
+}
+
+html[data-depth-stage="native"] .depth-scroll-stage {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  contain: none;
+}
+
+html[data-depth-stage="native"] .depth-scroll-sticky {
+  position: relative;
+  top: auto;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  contain: none;
+}
+
+html[data-depth-stage="native"] .depth-scroll-stage .text-screen {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  visibility: visible;
+  will-change: auto;
+}
+
 .screen-gradient {
   --screen-gradient:
     radial-gradient(80% 82% at 20% 18%, rgba(255, 255, 255, 0.2), transparent 62%),
@@ -257,6 +327,7 @@ body {
 }
 
 .screen-gradient-contact::before {
+  display: none;
   transform: none;
   will-change: auto;
 }
@@ -294,7 +365,7 @@ body {
   transform-style: preserve-3d;
 }
 
-html[data-depth-atmosphere="active"] .depth-motion-field {
+html[data-depth-stage="active"] .depth-motion-field {
   will-change: transform, opacity;
 }
 
@@ -857,7 +928,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
   border: 1px solid rgba(17, 19, 22, 0.14);
   border-radius: 16px;
   appearance: none;
-  background: rgba(255, 255, 255, 0.8);
+  background: #fff;
   color: #111316;
   font: 500 0.96rem/1.2 var(--font-body);
   letter-spacing: 0;
@@ -899,7 +970,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 .contact-field select:focus,
 .contact-field textarea:focus {
   border-color: rgba(17, 19, 22, 0.42);
-  background: rgba(255, 255, 255, 0.92);
+  background: #fff;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.22);
 }
 
@@ -967,7 +1038,7 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
 
 .crowd-footer-title {
   display: grid;
-  row-gap: clamp(5px, 0.95svh, 9px);
+  row-gap: clamp(8px, 1.2svh, 12px);
   max-width: 13ch;
   margin: 0;
   font-family: var(--font-display);
@@ -1069,6 +1140,32 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
     overscroll-behavior-y: auto;
     scroll-behavior: auto;
     scroll-snap-type: none;
+  }
+
+  .depth-scroll-stage {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    contain: none;
+  }
+
+  .depth-scroll-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    contain: none;
+  }
+
+  .depth-scroll-stage .text-screen {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    visibility: visible;
+    will-change: auto;
   }
 
   .site-header {
@@ -1407,6 +1504,32 @@ html[data-depth-atmosphere="active"] .depth-motion-field {
   .screen-gradient::before {
     opacity: 1;
     transform: none;
+  }
+
+  .depth-scroll-stage {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    contain: none;
+  }
+
+  .depth-scroll-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    contain: none;
+  }
+
+  .depth-scroll-stage .text-screen {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    visibility: visible;
+    will-change: auto;
   }
 
 }
